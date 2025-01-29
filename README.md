@@ -27,7 +27,7 @@ end
 
 ## Usage
 
-1. Configure  typed or named `HttpClient`:
+Configure  typed or named `HttpClient`:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
@@ -39,7 +39,8 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 ```
 , where `AskCatService` is a service that implements `IAskCatService`, with `HttpClient` or `IHttpClientFactory` injected.
 
-2. Call the library's `IHttpClienBuilder.WithResiliencePipeline` extensions method and configure the pipeline of the `DelegatingHandler`s by calling the `AddPolicyHandler` methods with the policy you want to use in this handler:
+---
+Call the library's `IHttpClienBuilder.WithResiliencePipeline` extensions method and configure the pipeline of the `DelegatingHandler`s by calling the `AddPolicyHandler` methods with the policy you want to use in this handler:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
@@ -74,7 +75,8 @@ services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
 		...
 	, context)
 ```
-3. When you want to complete the pipeline, call the `AsFinalHandler` method for the last added handler and configure `HttpErrorFilter` to filter transient http errors (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`) and/or any non-successful status codes or categories:
+---
+When you want to complete the pipeline, call the `AsFinalHandler` method for the last added handler and configure `HttpErrorFilter` to filter transient http errors (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`) and/or any non-successful status codes or categories:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
@@ -102,7 +104,8 @@ Optionally you can add any status code category to the final handler filter:
 ```
 Inclusion in the outer handler filter of any `Exception` type thrown by the inner handler is also supported using the `IncludeException<TException>` method.  
 
-4. In a service that uses `HttpClient` or `HttpClientFactory`, wrap the call to `HttpClient` in a catch block that handles the special `HttpPolicyResultException` exception. 
+---
+In a service that uses `HttpClient` or `HttpClientFactory`, wrap the call to `HttpClient` in a catch block that handles the special `HttpPolicyResultException` exception. 
 If the request was not successful, examine the `HttpPolicyResultException` properties in this handler for details of the response:
 
 ```csharp
