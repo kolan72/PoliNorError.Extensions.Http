@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Version>0.1.0</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageIcon>PoliNorError.png</PackageIcon>
+    <PackageReadmeFile>NuGet.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Authors>Andrey Kolesnichenko</Authors>
+    <Copyright>Copyright 2025 Andrey Kolesnichenko</Copyright>
+    <Description>The library provides an outgoing request resiliency pipeline for `HttpClient`, using policies from the PoliNorError library.</Description>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>HttpClient Exception Handling Error Resilience Transient Policy Retry Fallback</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <NoWarn>1701;1702;1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <NoWarn>1701;1702;1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.0" />
+    <PackageReference Include="PoliNorError" Version="2.20.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+    <_Parameter1>PoliNorError.Extensions.Http.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\PoliNorError.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
+    <None Include="docs\NuGet.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>
