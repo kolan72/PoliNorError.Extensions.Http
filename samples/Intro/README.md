@@ -7,7 +7,7 @@ But sometimes he's not online or doesn't feel like talking and just translates h
 To get an answer in this case, you can use a few tactics.
 
 
-## Retry
+## 🐱 Retry
 
 If the cat gives a wrong answer, you can ask again a maximum of 3 times with an interval of 1 second (it's the final handler made by `RetryPolicy`).  
 After 2 such unsuccessful sessions (repeating is supported by the outer handler also created by the other `RetryPolicy`) with an interval of 3 seconds (cat needs a little rest), you will be asked if you want to continue.  
@@ -17,7 +17,7 @@ Note that when constructing the final handler, we use the `AddPolicyHandler` met
 Note also that in the outer retry policy we wait between retries by error processor using the default spinner from the 'Spectre.Console' nuget package (may not work correctly on some terminals).  
 
 
-## Fallback
+## 😼 Fallback
 
 Instead of trying to imitate a smart cat, you can suggest that he just say "meow" as a typical cat answer.
 After all, it's just a cat most of the time.  
@@ -25,7 +25,7 @@ Set the 'Fallback' project as the start project and run it to see if it works.
 Note that in the Fallback example to add pipeline we are using the `IHttpClientBuilder.WithResiliencePipeline<TContext>` extension method with a string context (fallbackAnswer).
 
 
-## Nuances of the use of samples
+## 😹 Nuances of the use of samples
 
 Service, that uses `HttpClient` (`AskCatService`) is placed in the 'Shared' project. It handles the `HttpPolicyResultException` exception, if it occurs, in the `GetCatFactAsync` method.
 To mimic transient errors, uri is randomized and the `HandlerThatMakesTransientErrorFrom404` handler is used to randomly generate one of the transient errors.  
