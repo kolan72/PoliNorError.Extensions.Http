@@ -40,7 +40,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 , where `AskCatService` is a service that implements `IAskCatService`, with `HttpClient` or `IHttpClientFactory` injected.
 
 ---
-Call the library's `IHttpClienBuilder.WithResiliencePipeline` extensions method and configure the pipeline of the `DelegatingHandler`s by calling the `AddPolicyHandler` methods with the policy you want to use in this handler:
+Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method and configure the pipeline of `DelegatingHandler`s by using the `AddPolicyHandler` method with the policy you want to apply in this handler:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
@@ -49,18 +49,12 @@ services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
 	})
 	.WithResiliencePipeline((pb) => 
 		pb
-		.AddPolicyHandler(Policy1JustCreated)
+		.AddPolicyHandler(PolicyJustCreated)
 		.AddPolicyHandler((IServiceProvider sp) => funcThatUsesServiceProviderToCreatePolicy(sp))
 		...
 	)
 ```
-, where   
-- `pb` - represents the pipeline.
-- `Policy1JustCreated` - Retry or Fallback policy from the [PoliNorError](https://github.com/kolan72/PoliNorError) library.
-- `funcThatUsesServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` to create a policy.  
-
-There is also the `IHttpClientBuilder.WithResiliencePipeline<TContext>` extension method with an additional generic `TContext` parameter.  
-This method allows you to use the `AddPolicyHandler<T>(Func<TContext, IServiceProvider, T>)` method to add a policy handler to a pipeline with an overall context parameter:
+Or use the `WithResiliencePipeline` method overload that includes an additional context parameter:
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
 	{
@@ -75,6 +69,11 @@ services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
 		...
 	, context)
 ```
+, where   
+- `pb` - represents the pipeline builder.
+- `PolicyJustCreated` - a policy from the [PoliNorError](https://github.com/kolan72/PoliNorError) library.
+- `funcThatUsesServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` to create a policy.  
+- `funcThatUsesContextAndServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` and context to create a policy.  
 ---
 When you want to complete the pipeline, call the `AsFinalHandler` method for the last added handler and configure `HttpErrorFilter` to filter transient http errors (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`) and/or any non-successful status codes or categories:
 
