@@ -142,7 +142,7 @@ Public properties of the `HttpPolicyResultException`:
 	- otherwise - an `exception` thrown by a final handler, or by a handler in or out of the pipeline that throws its own exception, and the outer handler to that handler includes the type of that exception in its filter (using the `IncludeException<TException>` method).
 - `FailedResponseData` - not null if the status code part of the handling filter matches the response status code.
 - `HasFailedResponse` - true if `FailedResponseData` is not null.
-- `PolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result produced by a policy of the bottom handler.  
+- `PolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result that is produced by a policy that belongs to the `DelegatingHandler` that throws this exception.  
 - `InnermostPolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result produced by a policy of the final handler or by a handler in the pipeline that throws its own exception. 
 - `IsErrorExpected` - indicates whether the filter for the original exception was satisfied.
 - `IsCanceled` - indicates whether the execution was canceled.

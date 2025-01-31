@@ -32,7 +32,7 @@ namespace PoliNorError.Extensions.Http
 		public override string Message => PolicyResult.IsCanceled ? "The operation was canceled" : InnerException?.Message;
 
 		/// <summary>
-		/// Specifies the <see cref="PolicyResult{HttpResponseMessage}"/> result produced by a policy of the bottom handler.
+		/// Specifies the <see cref="PolicyResult{HttpResponseMessage}"/> result that is produced by a policy that belongs to the DelegatingHandler that throws this exception.
 		/// </summary>
 		public PolicyResult<HttpResponseMessage> PolicyResult { get; }
 
