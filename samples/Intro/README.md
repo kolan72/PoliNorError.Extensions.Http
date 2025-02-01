@@ -12,7 +12,7 @@ To get an answer in this case, you can use a few tactics.
 
 If the cat gives a wrong answer, you can ask again a maximum of 3 times with an interval of 1 second (it's the final handler made by `RetryPolicy`).  
 After 2 such unsuccessful sessions (repeating is supported by the outer handler also created by the other `RetryPolicy`) with an interval of 3 seconds (cat needs a little rest), you will be asked if you want to continue.  
-If you choose "yes", sooner or later the cat will answer correctly.  
+Choose "yes" and sooner or later the cat will answer correctly.  
 Set the 'Retry' project as the start project and run it to see if it works.  
 
 Note that when constructing the final handler, we use the `AddPolicyHandler` method overload with the `IServiceProvider` parameter.  
@@ -33,6 +33,6 @@ Note that in the Fallback example to add pipeline we are using the `IHttpClientB
 Service, that uses `HttpClient` (`AskCatService`) is placed in the 'Shared' project. It handles the `HttpPolicyResultException` exception, if it occurs, in the `GetCatFactAsync` method.  
 
 To mimic transient errors, uri is randomized and the `HandlerThatMakesTransientErrorFrom404` handler is used to randomly generate one of the transient errors.  
-To beautify the console output, the 'Spectre.Console', 'vertical-spectreconsolelogger' nuget packages is used.  
+To beautify the console output, the 'Spectre.Console', 'vertical-spectreconsolelogger' nuget packages are used.  
 To simplify exception output, minimal console options provided by the `vertical-spectreconsolelogger' package are used.  
 The joke samples use cat-friendly service https://catfact.ninja/ . The cat in the photo is real, but the photo has been processed by AI.  
