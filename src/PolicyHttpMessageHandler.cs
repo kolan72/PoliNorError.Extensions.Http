@@ -30,7 +30,7 @@ namespace PoliNorError.Extensions.Http
 		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
 			var fn = ((Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>)SendCoreAsync).Apply(request);
-			var result = await _policy.HandleAsync(fn, cancellationToken);
+			var result = await _policy.HandleAsync(fn, cancellationToken).ConfigureAwait(false);
 			if (result.IsSuccess)
 				return result.Result;
 			if (result.IsFailed || result.IsCanceled)
