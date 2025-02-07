@@ -61,7 +61,7 @@ namespace PoliNorError.Extensions.Http
 			request.Properties[PreviousResponseKey] = result;
 			if (!_isFinalHandler)
 				return result;
-			return await HttpResponseMessageToHandleByPolicyAdapter.AdaptAsync(result, _errorsToHandle);
+			return await HttpResponseMessageToHandleByPolicyAdapter.AdaptAsync(result, _errorsToHandle).ConfigureAwait(false);
 		}
 	}
 }
