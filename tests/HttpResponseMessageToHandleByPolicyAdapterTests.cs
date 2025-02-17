@@ -11,7 +11,7 @@ namespace PoliNorError.Extensions.Http.Tests
 		[TestCase(false)]
 		public async Task Should_Adapt_For_AllNonSuccessfulStatusCodes_Work(bool successStatusCode)
 		{
-			var statusCodesToHandle = HttpErrorFilter.HandleAllNonSuccessStatusCodes();
+			var statusCodesToHandle = HttpErrorFilter.HandleNonSuccessfulStatusCodes();
 			var response = new HttpResponseMessage(successStatusCode ? System.Net.HttpStatusCode.OK : System.Net.HttpStatusCode.NotFound);
 			if (successStatusCode)
 			{

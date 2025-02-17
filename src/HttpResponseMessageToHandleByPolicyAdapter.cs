@@ -6,7 +6,7 @@ namespace PoliNorError.Extensions.Http
 {
 	internal static class HttpResponseMessageToHandleByPolicyAdapter
 	{
-		internal static async Task<HttpResponseMessage> AdaptAsync(HttpResponseMessage result, IHttpErrorFilter statusCodesStore)
+		internal static async Task<HttpResponseMessage> AdaptAsync(HttpResponseMessage result, HttpErrorFilterCriteria statusCodesStore)
 		{
 			if (statusCodesStore.Contains((int)result.StatusCode))
 			{

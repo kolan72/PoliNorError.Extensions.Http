@@ -66,7 +66,7 @@ namespace PoliNorError.Extensions.Http.Tests
 		[TestCase((int)HttpStatusCode.BadGateway, false)]
 		public void Should_HandleTransientHttpErrors_And_HandleTransientHttpStatusCodes_Filter_TransientStatusCodes(int statusCodeToCheck, bool statusCodesOnly)
 		{
-			HttpErrorFilter filter = statusCodesOnly ? HttpErrorFilter.HandleTransientHttpStatusCodes() : HttpErrorFilter.HandleTransientHttpErrors();
+			ConfigurableHttpErrorFilter filter = statusCodesOnly ? HttpErrorFilter.HandleTransientHttpStatusCodes() : HttpErrorFilter.HandleTransientHttpErrors();
 
 			var fakeHttpDelegatingHandler = new DelegatingHandlerThatReturnsBadStatusCode(_ => Task.FromResult(new HttpResponseMessage((HttpStatusCode)statusCodeToCheck)));
 			int i = 0;
@@ -102,7 +102,7 @@ namespace PoliNorError.Extensions.Http.Tests
 		[TestCase((int)HttpStatusCode.Found, false)]
 		public async Task Should_HandleTransientHttpErrors_And_HandleTransientHttpStatusCodes_NotFilter_NotTransientStatusCodes(int statusCodeToCheck, bool statusCodesOnly)
 		{
-			HttpErrorFilter filter = statusCodesOnly ? HttpErrorFilter.HandleTransientHttpStatusCodes() : HttpErrorFilter.HandleTransientHttpErrors();
+			ConfigurableHttpErrorFilter filter = statusCodesOnly ? HttpErrorFilter.HandleTransientHttpStatusCodes() : HttpErrorFilter.HandleTransientHttpErrors();
 
 			var fakeHttpDelegatingHandler = new DelegatingHandlerThatReturnsBadStatusCode(_ => Task.FromResult(new HttpResponseMessage((HttpStatusCode)statusCodeToCheck)));
 			int i = 0;

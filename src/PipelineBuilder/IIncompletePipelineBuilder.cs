@@ -12,6 +12,6 @@ namespace PoliNorError.Extensions.Http
 		/// </summary>
 		/// <param name="errorsToHandle">Filter for http errors.</param>
 		/// <returns></returns>
-		IPipelineBuilder AsFinalHandler(IHttpErrorFilter errorsToHandle);
+		IPipelineBuilder AsFinalHandler(HttpErrorFilterCriteria errorsToHandle);
 	}
 }

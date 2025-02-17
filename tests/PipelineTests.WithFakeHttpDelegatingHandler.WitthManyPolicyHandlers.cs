@@ -27,7 +27,7 @@ namespace PoliNorError.Extensions.Http.Tests
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => k++))
 														.IncludeException<ArgumentException>()
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
-														.AsFinalHandler(HttpErrorFilter.HandleNone())
+														.AsFinalHandler(HttpErrorFilter.None())
 														.IncludeException<ArgumentException>())
 			//Add fake DelegatingHandler as the first handler.
 			.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
@@ -96,7 +96,7 @@ namespace PoliNorError.Extensions.Http.Tests
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => k++))
 														.IncludeException<ArgumentException>()
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
-														.AsFinalHandler(HttpErrorFilter.HandleNone())
+														.AsFinalHandler(HttpErrorFilter.None())
 														.IncludeException<ArgumentException>())
 			.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
 

@@ -13,9 +13,9 @@ namespace PoliNorError.Extensions.Http
 	{
 		private readonly IEnumerable<Func<IServiceProvider, IPolicyBase>> _factories;
 		private readonly IPipelinePolicyItem _lastPipelinePolicyItem;
-		private readonly IHttpErrorFilter _errorsToHandle;
+		private readonly HttpErrorFilterCriteria _errorsToHandle;
 
-		internal PipelineBuilder(IEnumerable<Func<IServiceProvider, IPolicyBase>> factories, IPipelinePolicyItem lastPipelinePolicyItem, IHttpErrorFilter errorsToHandle)
+		internal PipelineBuilder(IEnumerable<Func<IServiceProvider, IPolicyBase>> factories, IPipelinePolicyItem lastPipelinePolicyItem, HttpErrorFilterCriteria errorsToHandle)
 		{
 			_factories = factories;
 			_lastPipelinePolicyItem = lastPipelinePolicyItem;

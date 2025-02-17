@@ -51,7 +51,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(store.Contains(HttpStatusCode.Continue), Is.True);
 		}
 
-		private void StoreContainsTransientHttpStatusCodes(HttpErrorFilter store)
+		private void StoreContainsTransientHttpStatusCodes(ConfigurableHttpErrorFilter store)
 		{
 			Assert.That(store.Contains(HttpStatusCode.RequestTimeout), Is.True);
 			Assert.That(store.Contains(429), Is.True);
@@ -74,14 +74,14 @@ namespace PoliNorError.Extensions.Http.Tests
 		[TestCase(500, true)]
 		public void Should_HandleAllNonSuccessfulCodes_Work(int statusCode, bool expected)
 		{
-			var store = HttpErrorFilter.HandleAllNonSuccessStatusCodes();
+			var store = HttpErrorFilter.HandleNonSuccessfulStatusCodes();
 			Assert.That(store.Contains(statusCode), Is.EqualTo(expected));
 		}
 
 		[Test]
 		public void Should_NoHttpErrorsToHandle_Work()
 		{
-			var errorsToHandle = HttpErrorFilter.HandleNone();
+			var errorsToHandle = HttpErrorFilter.None();
 			Assert.That(errorsToHandle.IncludeHttpRequestException, Is.False);
 			Assert.That(errorsToHandle.Contains((int)HttpStatusCode.BadGateway), Is.False);
 		}

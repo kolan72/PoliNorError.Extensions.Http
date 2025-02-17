@@ -7,6 +7,6 @@
 	public interface IIncompletePipelineBuilder<TContext> : IPolicyHandlerStorage<IIncompletePipelineBuilder<TContext>, TContext>,
 															IWithPolicyHandlerExceptionFilter<IIncompletePipelineBuilder<TContext>>
 	{
-		IPipelineBuilder<TContext> AsFinalHandler(IHttpErrorFilter errorsToHandle);
+		IPipelineBuilder<TContext> AsFinalHandler(HttpErrorFilterCriteria errorsToHandle);
 	}
 }

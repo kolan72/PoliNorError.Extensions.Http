@@ -78,7 +78,7 @@ namespace Retries
 			.WithResiliencePipeline((emptyBuilder) => emptyBuilder
 													.AddPolicyHandler(CatPolicies.GetOuterRetryPolicy(logger))
 													.AsFinalHandler(
-																 HttpErrorFilter.HandleNone())
+																 HttpErrorFilter.None())
 													)
 			.WithResiliencePipeline((emptyBuilder) => emptyBuilder
 													.AddPolicyHandler(CatPolicies.GetFinalHandlerRetryPolicy(logger))

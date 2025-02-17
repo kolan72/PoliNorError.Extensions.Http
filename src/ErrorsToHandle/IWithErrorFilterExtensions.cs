@@ -4,7 +4,7 @@ namespace PoliNorError.Extensions.Http
 {
 	internal static class WithErrorFilterExtensions
 	{
-		internal static T WithErrorsFilter<T>(this T withErrorFilter, IHttpErrorFilter errorsToHandle) where T : IWithErrorFilter<T>, IWithInnerErrorFilter<T>
+		internal static T WithErrorsFilter<T>(this T withErrorFilter, HttpErrorFilterCriteria errorsToHandle) where T : IWithErrorFilter<T>, IWithInnerErrorFilter<T>
 		{
 			if (errorsToHandle is IEmptyHttpErrorFilter)
 			{

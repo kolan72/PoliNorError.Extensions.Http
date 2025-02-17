@@ -18,7 +18,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				.AddFakeHttpClient()
 				.WithResiliencePipeline((empyConfig) => empyConfig
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
-														.AsFinalHandler(HttpErrorFilter.HandleNone()));
+														.AsFinalHandler(HttpErrorFilter.None()));
 
 			var serviceProvider = services.BuildServiceProvider();
 
@@ -48,7 +48,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				.WithResiliencePipeline((empyConfig) => empyConfig
 															.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
 															//No filter works with precanceling, so we do not set an http filter.
-															.AsFinalHandler(HttpErrorFilter.HandleNone())
+															.AsFinalHandler(HttpErrorFilter.None())
 															);
 
 				var serviceProvider = services.BuildServiceProvider();

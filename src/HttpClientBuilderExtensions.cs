@@ -36,7 +36,7 @@ namespace PoliNorError.Extensions.Http
 		}
 
 		/// <summary>
-		/// Adds created <see cref="Pipeline"/> pipeline to <see cref="IHttpClientBuilder"/>.
+		/// Adds created <see cref="Pipeline"/> pipeline to <see cref="IHttpClientBuilder"/>. Use the <see cref="PipelineBuilder"/> class to create a <see cref="Pipeline"/> class.
 		/// </summary>
 		/// <param name="builder"><see cref="IHttpClientBuilder"/></param>
 		/// <param name="pipeline">Pipeline</param>

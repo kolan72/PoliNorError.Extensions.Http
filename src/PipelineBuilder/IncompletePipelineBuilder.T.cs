@@ -33,7 +33,7 @@ namespace PoliNorError.Extensions.Http
 			return this;
 		}
 
-		public IPipelineBuilder<TContext> AsFinalHandler(IHttpErrorFilter errorsToHandle)
+		public IPipelineBuilder<TContext> AsFinalHandler(HttpErrorFilterCriteria errorsToHandle)
 		{
 			_curPipelinePolicyItem.AsFinalHandler(errorsToHandle);
 			return new PipelineBuilder<TContext>(_pipelinePolicyItems.Select(pit => pit.PolicyFactory), _curPipelinePolicyItem, errorsToHandle);
@@ -67,7 +67,7 @@ namespace PoliNorError.Extensions.Http
 
 			public Func<TContext, IServiceProvider, IPolicyBase> PolicyFactory => (ctx, sp) => _policyFunc(ctx, sp);
 
-			public void AsFinalHandler(IHttpErrorFilter errorsToHandle)
+			public void AsFinalHandler(HttpErrorFilterCriteria errorsToHandle)
 			{
 				T p(T pEx)
 				{

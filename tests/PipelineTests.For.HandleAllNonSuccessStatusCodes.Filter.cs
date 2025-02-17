@@ -23,7 +23,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			services.AddFakeHttpClient()
 			.WithResiliencePipeline((empyConfig) => empyConfig
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
-														.AsFinalHandler(HttpErrorFilter.HandleAllNonSuccessStatusCodes()))
+														.AsFinalHandler(HttpErrorFilter.HandleNonSuccessfulStatusCodes()))
 			.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
 
 			var serviceProvider = services.BuildServiceProvider();
@@ -56,7 +56,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			services.AddFakeHttpClient()
 			.WithResiliencePipeline((empyConfig) => empyConfig
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
-														.AsFinalHandler(HttpErrorFilter.HandleAllNonSuccessStatusCodes()))
+														.AsFinalHandler(HttpErrorFilter.HandleNonSuccessfulStatusCodes()))
 			.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
 
 			var serviceProvider = services.BuildServiceProvider();

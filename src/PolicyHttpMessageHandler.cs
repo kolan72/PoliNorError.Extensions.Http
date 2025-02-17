@@ -13,7 +13,7 @@ namespace PoliNorError.Extensions.Http
 
 		private bool _isFinalHandler;
 
-		private IHttpErrorFilter _errorsToHandle;
+		private HttpErrorFilterCriteria _errorsToHandle;
 
 		private PolicyHttpMessageHandler() { }
 
@@ -22,7 +22,7 @@ namespace PoliNorError.Extensions.Http
 			return new PolicyHttpMessageHandler { _policy = policy};
 		}
 
-		public static PolicyHttpMessageHandler CreateFinalHandler(IPolicyBase policy, IHttpErrorFilter errorsToHandle)
+		public static PolicyHttpMessageHandler CreateFinalHandler(IPolicyBase policy, HttpErrorFilterCriteria errorsToHandle)
 		{
 			return new PolicyHttpMessageHandler {_policy = policy, _errorsToHandle = errorsToHandle, _isFinalHandler = true };
 		}
