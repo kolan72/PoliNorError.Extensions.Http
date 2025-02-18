@@ -70,7 +70,7 @@ namespace PoliNorError.Extensions.Http
 		/// </summary>
 		/// <param name="statusCode">Status code to check.</param>
 		/// <returns></returns>
-		public bool Contains(HttpStatusCode statusCode) => _statusCodesToHandle.Contains(statusCode);
+		internal bool Contains(HttpStatusCode statusCode) => _statusCodesToHandle.Contains(statusCode);
 
 		internal override bool Contains(int statusCode) => _statusCodesToHandle.Contains(statusCode);
 
