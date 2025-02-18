@@ -7,7 +7,6 @@
 	{
 		internal EmptyHttpErrorFilter(){}
 
-		///<inheritdoc cref="IHttpErrorFilter.Contains(int)"/>
 		internal override bool Contains(int statusCode) => false;
 	}
 

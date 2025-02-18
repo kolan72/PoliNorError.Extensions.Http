@@ -3,7 +3,9 @@ using System.Net.Http;
 
 namespace PoliNorError.Extensions.Http
 {
-	///<inheritdoc cref="IHttpErrorFilter"/>
+	/// <summary>
+	/// Represents the configurable filter for setting http errors that should be handled in a resilient manner.
+	/// </summary>
 	public class ConfigurableHttpErrorFilter : HttpErrorFilterCriteria
 	{
 		internal StatusCodesToHandle _statusCodesToHandle = new StatusCodesToHandle();
@@ -63,10 +65,13 @@ namespace PoliNorError.Extensions.Http
 			return this;
 		}
 
-		///<inheritdoc cref="IHttpErrorFilter.Contains(int)"/>
+		/// <summary>
+		/// Determines whether an <paramref name="statusCode"/> is in the filter.
+		/// </summary>
+		/// <param name="statusCode">Status code to check.</param>
+		/// <returns></returns>
 		public bool Contains(HttpStatusCode statusCode) => _statusCodesToHandle.Contains(statusCode);
 
-		///<inheritdoc cref="IHttpErrorFilter.Contains(int)"/>
 		internal override bool Contains(int statusCode) => _statusCodesToHandle.Contains(statusCode);
 
 		private ConfigurableHttpErrorFilter AddStatusCodeCategory(StatusCodesCategory statusCategoryNumber)

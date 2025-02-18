@@ -7,7 +7,6 @@
 	{
         internal NonSuccessfulStatusCodes(){}
 
-		///<inheritdoc cref="IHttpErrorFilter.Contains(int)"/>
 		internal override bool Contains(int statusCode) => !SuccessfulStatusCodesChecker.IsSuccessStatusCode(statusCode);
 	}
 }

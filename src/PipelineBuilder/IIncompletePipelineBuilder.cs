@@ -8,7 +8,7 @@ namespace PoliNorError.Extensions.Http
 													IWithPolicyHandlerExceptionFilter<IIncompletePipelineBuilder>
 	{
 		/// <summary>
-		/// Finishes building the <see cref="Pipeline"/> by adding <see cref="IHttpErrorFilter"/> to the last <see cref="DelegatingHandler"/> in the <see cref="IPipelineBuilder"/> collection.
+		/// Finishes building the <see cref="Pipeline"/> by adding <see cref="HttpErrorFilterCriteria"/> to the last <see cref="DelegatingHandler"/> in the <see cref="IPipelineBuilder"/> collection.
 		/// </summary>
 		/// <param name="errorsToHandle">Filter for http errors.</param>
 		/// <returns></returns>
