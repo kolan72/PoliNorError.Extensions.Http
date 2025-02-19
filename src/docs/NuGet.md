@@ -69,20 +69,28 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 		.AddPolicyHandler(PolicyForFinalHandler)
 		//Adds transient http errors to the response handling filter.
 		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
-		//Include in the filter 'SomeExceptionFromNonPipelineHandler' exceptions 
-		//thrown by a non-pipeline handler (in this case)
-		//.IncludeException<SomeExceptionFromNonPipelineHandler>())
+		...
 	)
 ```
-Optionally you can add any status code category to the final handler filter:
+Additionally, you can include any status code category in the final handler filter:
 ```csharp
 		...
 		//Also adds 5XX status codes to the response handling filter.
-		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors().OrServerError())
+		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()
+			.OrServerError())
 		...
 
 ```
-Inclusion in the outer handler filter of any `Exception` type thrown by the inner handler is also supported using the `IncludeException<TException>` method.  
+You can also include in the filter any exception type thrown by an inner handler:
+```csharp
+		...
+		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
+		//Include 'SomeExceptionFromNonPipelineHandler' exceptions in the filter 
+		//when thrown by a non-pipeline handler (in this case).
+		.IncludeException<SomeExceptionFromNonPipelineHandler>()
+		...
+
+```  
 
 4. In a service that uses `HttpClient` or `HttpClientFactory`, wrap the call to `HttpClient` in a catch block that handles the special `HttpPolicyResultException` exception. 
 If the request was not successful, examine the `HttpPolicyResultException` properties in this handler for details of the response:
