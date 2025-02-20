@@ -156,7 +156,7 @@ Public properties of the `HttpPolicyResultException`:
 
 ## Samples
 
-See samples folder for concrete example.
+See samples folder for concrete example [![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro).
 
 ## Links And Thanks
 
