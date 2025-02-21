@@ -1,4 +1,8 @@
+# PoliNorError.Extensions.Http
+
 The library provides an outgoing request resiliency pipeline for `HttpClient`, using policies from the [PoliNorError](https://github.com/kolan72/PoliNorError) library.
+
+![PoliNorError.Extensions.Http](PoliNorError.png)
 
 ```mermaid
 sequenceDiagram 
@@ -156,7 +160,7 @@ Public properties of the `HttpPolicyResultException`:
 
 ## Samples
 
-See samples folder for concrete example [![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro).
+See the /samples folder for concrete examples.[![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro).
 
 ## Links And Thanks
 
