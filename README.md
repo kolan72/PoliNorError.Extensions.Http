@@ -4,20 +4,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 ![PoliNorError.Extensions.Http](PoliNorError.png)
 
-```mermaid
-sequenceDiagram 
-box Pipeline
-participant MessageHandler1
-participant MessageHandler2
-participant FinalHandler
-end
-		participant MessageHandler1
-		participant MessageHandler2
-		participant FinalHandler
-		participant HttpClientHandler 
-		MessageHandler1->>HttpClientHandler: HttpRequest
-		HttpClientHandler->>MessageHandler1: HttpResponse
-```
+![Pipeline](/src/docs/diagrams/Pipeline.png)
 
 ## Key Features
 
