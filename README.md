@@ -6,7 +6,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 ![Pipeline](/src/docs/diagrams/Pipeline.png)
 
-## Key Features
+## ⚡ Key Features
 
 - Provides the ability to create a pipeline to handle typical transient HTTP failures (including the `HttpRequestException` exception).  
 - Flexible transient failure filter for the final `DelegatingHandler` in the pipeline for the response.  
@@ -16,9 +16,9 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 - Typed or named `HttpClient` can be used.  
 - Targets .NET Standard 2.0.  
 
-## Usage
+## 🚀 Usage
 
-Configure  typed or named `HttpClient`:
+⚙ Configure  typed or named `HttpClient`:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
@@ -31,7 +31,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 , where `AskCatService` is a service that implements `IAskCatService`, with `HttpClient` or `IHttpClientFactory` injected.
 
 ---
-Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method and configure the pipeline of `DelegatingHandler`s by using the `AddPolicyHandler` method with the policy you want to apply in this handler:
+🧩 Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method and configure the pipeline of `DelegatingHandler`s by using the `AddPolicyHandler` method with the policy you want to apply in this handler:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
@@ -66,7 +66,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
 - `funcThatUsesServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` to create a policy.  
 - `funcThatUsesContextAndServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` and context to create a policy.  
 ---
-When you want to complete the pipeline, call the `AsFinalHandler` method for the last added handler and configure `HttpErrorFilter` to filter transient http errors (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`) and/or any non-successful status codes or categories:
+🔵 When you want to complete the pipeline, call the `AsFinalHandler` method for the last added handler and configure `HttpErrorFilter` to filter transient http errors (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`) and/or any non-successful status codes or categories:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
@@ -102,7 +102,7 @@ You can also include in the filter any exception type thrown by an inner handler
 
 ```
 ---
-In a service that uses `HttpClient` or `HttpClientFactory`, wrap the call to `HttpClient` in a catch block that handles the special `HttpPolicyResultException` exception. 
+⚾ In a service that uses `HttpClient` or `HttpClientFactory`, wrap the call to `HttpClient` in a catch block that handles the special `HttpPolicyResultException` exception. 
 If the request was not successful, examine the `HttpPolicyResultException` properties in this handler for details of the response:
 
 ```csharp
@@ -131,7 +131,7 @@ catch (Exception ex)
 }
 ```
 
-## `HttpPolicyResultException` properties
+## 📜 `HttpPolicyResultException` properties
 
 Public properties of the `HttpPolicyResultException`:
 
@@ -145,11 +145,11 @@ Public properties of the `HttpPolicyResultException`:
 - `IsErrorExpected` - indicates whether the filter for the original exception was satisfied.
 - `IsCanceled` - indicates whether the execution was canceled.
 
-## Samples
+## 🐈 Samples [![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro).
 
-See the /samples folder for concrete examples.[![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro).
+See the [/samples](samples/Intro) folder for concrete examples.
 
-## Links And Thanks
+## 🔗 Links And Thanks
 
 Steve Gordon. HttpClientFactory in ASP.NET Core 2.1 (Part 3) :  
 https://www.stevejgordon.co.uk/httpclientfactory-aspnetcore-outgoing-request-middleware-pipeline-delegatinghandlers  
