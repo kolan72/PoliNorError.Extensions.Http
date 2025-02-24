@@ -8,7 +8,14 @@ namespace Fallback
 {
 	internal static class ServiceCollectionExtensions
 	{
-		public static IHttpClientBuilder AddCatClientWithPipelineOfHandlersCreatedInDifferentWays(this IServiceCollection services, ILogger logger, string fallbackAnswer)
+		/// <summary>
+		/// Extension method that provides shorthand for configuring the <see cref="ServiceCollection"/> in <see cref="Program.Main(string[])"/>
+		/// </summary>
+		/// <param name="services"><see cref="IServiceCollection"/></param>
+		/// <param name="logger"><see cref="ILogger"/></param>
+		/// <param name="pipelineContext">Overall context of the pipeline.</param>
+		/// <returns></returns>
+		public static IHttpClientBuilder AddCatClientWithPipelineOfHandlersCreatedInDifferentWays(this IServiceCollection services, ILogger logger, string pipelineContext)
 		{
 			return services
 				.AddConfig()
@@ -23,7 +30,7 @@ namespace Fallback
 							})
 							.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors());
 				}
-				, fallbackAnswer);
+				, pipelineContext);
 		}
 
 

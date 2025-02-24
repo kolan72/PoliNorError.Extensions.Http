@@ -10,7 +10,7 @@ namespace Retries
 	internal static class ServiceCollectionExtensions
 	{
 		/// <summary>
-		/// Shorthand extensions method used in <see cref="Program.Main(string[])"/>
+		/// Extension method that provides shorthand for configuring the <see cref="ServiceCollection"/> in <see cref="Program.Main(string[])"/>
 		/// </summary>
 		/// <param name="services"><see cref="IServiceCollection"/></param>
 		/// <param name="logger"><see cref="ILogger"/></param>
