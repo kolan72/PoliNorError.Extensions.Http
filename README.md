@@ -16,6 +16,13 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 - Typed or named `HttpClient` can be used.  
 - Targets .NET Standard 2.0.  
 
+## 🔑 Key Concepts
+
+- ➡**OuterHandler** is the **first** handler in the pipeline (closest to the request initiator).
+- ⬅**InnerHandler** is the **next** handler in the pipeline (closer to the final destination).
+-🔵**FinalHandler** is the innermost handler in the pipeline.
+-❌**Transient HTTP errors** are temporary failures that occur when making HTTP requests (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`). 
+
 ## 🚀 Usage
 
 ⚙ Configure  typed or named `HttpClient`:
