@@ -45,11 +45,6 @@ namespace PoliNorError.Extensions.Http
 		public string StatusDescription { get; set; }
 
 		/// <summary>
-		/// Response content
-		/// </summary>
-		public byte[] RawBytes { get; set; }
-
-		/// <summary>
 		/// The URL that actually responded to the content (different from request if redirected)
 		/// </summary>
 		public Uri ResponseUri { get; set; }
