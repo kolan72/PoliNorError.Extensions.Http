@@ -20,8 +20,8 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 - ➡**OuterHandler** is the **first** handler in the pipeline (closest to the request initiator).
 - ⬅**InnerHandler** is the **next** handler in the pipeline (closer to the final destination).
--🔵**FinalHandler** is the innermost handler in the pipeline.
--❌**Transient HTTP errors** are temporary failures that occur when making HTTP requests (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`). 
+- 🔵**FinalHandler** is the innermost handler in the pipeline.
+- ❌**Transient HTTP errors** are temporary failures that occur when making HTTP requests (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`). 
 
 ## 🚀 Usage
 
