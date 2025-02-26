@@ -57,7 +57,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
 - `funcThatUsesServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` to create a policy.  
 - `funcThatUsesContextAndServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` and context to create a policy.  
 
-3. When you want to complete the pipeline, call the `AsFinalHandler` method for the last added handler and configure `HttpErrorFilter` to filter transient http errors (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`) and/or any non-successful status codes or categories:
+3. When you want to complete the pipeline, call the `AsFinalHandler` method for the last added handler and configure `HttpErrorFilter` to filter transient http errors and/or any non-successful status codes or categories:
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 	{
