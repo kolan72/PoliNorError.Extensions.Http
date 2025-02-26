@@ -10,7 +10,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 - Provides the ability to create a pipeline to handle typical transient HTTP failures (including the `HttpRequestException` exception).  
 - Flexible transient failure filter for the final `DelegatingHandler` in the pipeline for the response.  
-- Optionally, arbitrary failure status codes or categories can be added to the final handler filter.  
+- Additionally, custom failure status codes or categories can be added to the final handler filter.  
 - Other exception types (besides `HttpRequestException`) can also be included in the final handler filter.  
 - Inclusion in the outer handler filter of any `Exception` type thrown by the inner handler is also supported.  
 - Typed or named `HttpClient` can be used.  
@@ -89,11 +89,11 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 		...
 	)
 ```
-Additionally, you can include any status code category in the final handler filter:
+Additionally, you can include custom failure status codes or categories in the final handler filter:
 ```csharp
 		...
-		//Also adds 5XX status codes to the response handling filter.
 		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()
+			// ✔ Also adds 5XX status codes to the response handling filter.
 			.OrServerError())
 		...
 
