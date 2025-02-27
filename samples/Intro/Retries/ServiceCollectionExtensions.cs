@@ -43,6 +43,12 @@ namespace Retries
 														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
 		}
 
+		/// <summary>
+		/// Extension method providing a shorthand for configuring <see cref="IServiceCollection"/> with <see cref="System.Net.Http.IHttpClientFactory"/> in <see cref="Program.Main(string[])"/>.
+		/// </summary>
+		/// <param name="services"><see cref="IServiceCollection"/></param>
+		/// <param name="logger"><see cref="ILogger"/></param>
+		/// <returns></returns>
 		public static IHttpClientBuilder AddNamedCatClientWithPipeline(this IServiceCollection services, ILogger logger)
 		{
 			return services

@@ -37,7 +37,7 @@ namespace Retries
 				//This handler is used here to mimic service resiliency problems.
 				.AddHttpMessageHandler<HandlerThatMakesTransientErrorFrom404>();
 
-			//Uncomment this line to work with the named client
+			//Uncomment this line to use IHttpClientFactory.
 			//services.AddNamedCatClientWithPipeline(loggerTest)
 			//		.AddHttpMessageHandler<HandlerThatMakesTransientErrorFrom404>();
 
