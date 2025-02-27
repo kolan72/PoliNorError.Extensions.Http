@@ -13,7 +13,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 - Additionally, custom failure status codes or categories can be added to the final handler filter.  
 - Other exception types (besides `HttpRequestException`) can also be included in the final handler filter.  
 - Inclusion in the outer handler filter of any `Exception` type thrown by the inner handler is also supported.  
-- Typed or named `HttpClient` can be used.  
+- Both typed and named `HttpClient`, as well as `IHttpClientFactory`, can be used. 
 - Targets .NET Standard 2.0.  
 
 ## 🔑 Key Concepts
