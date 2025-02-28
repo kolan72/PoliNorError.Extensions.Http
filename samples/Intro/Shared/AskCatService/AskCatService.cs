@@ -11,8 +11,8 @@ namespace Shared
 	{
 		private readonly HttpClient _client;
 
-        public AskCatService(HttpClient client)
-        {
+		public AskCatService(HttpClient client)
+		{
 			_client = client;
 		}
 

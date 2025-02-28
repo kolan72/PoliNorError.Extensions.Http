@@ -18,7 +18,7 @@ namespace PoliNorError.Extensions.Http
 		private PolicyHttpMessageHandler() { }
 
 		public static PolicyHttpMessageHandler CreateOuterHandler(IPolicyBase policy)
-        {
+		{
 			return new PolicyHttpMessageHandler { _policy = policy};
 		}
 

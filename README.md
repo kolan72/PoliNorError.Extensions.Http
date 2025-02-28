@@ -152,7 +152,7 @@ Public properties of the `HttpPolicyResultException`:
 - `IsErrorExpected` - indicates whether the filter for the original exception was satisfied.
 - `IsCanceled` - indicates whether the execution was canceled.
 
-## 🐈 Samples [![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro).
+## 🐈 Samples [![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro)
 
 See the [/samples](samples/Intro) folder for concrete examples.
 

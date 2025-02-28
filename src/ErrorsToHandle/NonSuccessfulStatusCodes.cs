@@ -5,7 +5,7 @@
 	/// </summary>
 	public class NonSuccessfulStatusCodes : HttpErrorFilterCriteria
 	{
-        internal NonSuccessfulStatusCodes(){}
+		internal NonSuccessfulStatusCodes(){}
 
 		internal override bool Contains(int statusCode) => !SuccessfulStatusCodesChecker.IsSuccessStatusCode(statusCode);
 	}

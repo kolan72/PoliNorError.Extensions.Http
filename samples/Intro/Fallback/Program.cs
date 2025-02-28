@@ -31,7 +31,7 @@ namespace Fallback
 							.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors());
 				}
 				, fallbackAnswer)
-					//This handler is used here to mimic service resiliency problems.
+				//This handler is used here to mimic service resiliency problems.
 				.AddHttpMessageHandler<HandlerThatMakesTransientErrorFrom404>();
 
 			var provider = services.BuildServiceProvider();
