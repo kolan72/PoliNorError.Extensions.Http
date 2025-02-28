@@ -7,6 +7,8 @@ namespace Shared
 {
 	public static class HttpClientConfiguration
 	{
+		internal const string CatClientHttpClientName = "catClient";
+
 		public static IHttpClientBuilder AddCatHttpClient(this IServiceCollection services)
 		{
 			return services.AddHttpClient<IAskCatService, AskCatService>(ConfigureClient);
@@ -14,7 +16,7 @@ namespace Shared
 
 		public static IHttpClientBuilder AddNamedCatHttpClient(this IServiceCollection services)
 		{
-			return services.AddHttpClient("catClient", ConfigureClient);
+			return services.AddHttpClient(CatClientHttpClientName, ConfigureClient);
 		}
 
 		private static readonly Action<IServiceProvider, HttpClient> ConfigureClient = (sp, client) =>

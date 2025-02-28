@@ -21,7 +21,7 @@ namespace Shared
 			try
 			{
 				token.ThrowIfCancellationRequested();
-				var client = _factory.CreateClient("catClient");
+				var client = _factory.CreateClient(HttpClientConfiguration.CatClientHttpClientName);
 
 				using var response = await client.GetAsync(CatFactUriMutator.GetCatFactUri(), token).ConfigureAwait(false);
 				
