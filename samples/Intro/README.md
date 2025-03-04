@@ -1,5 +1,5 @@
 # About my cat
-![alt text](https://github.com/kolan72/kolan72.github.io/blob/master/images/my_spiritual_cat.png?raw=true)  
+![cat_photo](/samples/Intro/docs/cat_photo_processed.png)   
 
 My cat is very spiritual. He has access to the Collective Unconscious (or Conscious, who knows?), at least the cat part.  
 With this program you can ask my cat for a fact about cat life, and if he is in a good mood, he will give you one for the first time.  
