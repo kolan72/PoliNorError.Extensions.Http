@@ -36,3 +36,7 @@ To mimic transient errors, uri is randomized and the `HandlerThatMakesTransientE
 To beautify the console output, the 'Spectre.Console', 'vertical-spectreconsolelogger' nuget packages are used.  
 To simplify exception output, minimal console options provided by the `vertical-spectreconsolelogger' package are used.  
 The joke samples use cat-friendly service https://catfact.ninja/ . The cat in the photo is real, but the photo has been processed by AI.  
+
+
+## 📊 Sample Diagram
+![cat_photo](/samples/Intro/docs/diagrams/cat_samples.png)   
