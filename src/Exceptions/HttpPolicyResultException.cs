@@ -85,14 +85,14 @@ namespace PoliNorError.Extensions.Http
 			return currentPr.UnprocessedError;
 		}
 
-		internal PolicyResult<HttpResponseMessage> GetInnermostPolicyResult()
+		private PolicyResult<HttpResponseMessage> GetInnermostPolicyResult()
 		{
 			if (ThrownByFinalHandler)
 			{
 				return PolicyResult;
 			}
 
-			PolicyResult<HttpResponseMessage> currentResult = PolicyResult;
+			var currentResult = PolicyResult;
 			while (currentResult?.UnprocessedError?.GetType() == typeof(HttpPolicyResultException))
 			{
 				currentResult = ((HttpPolicyResultException)currentResult.UnprocessedError).PolicyResult;
