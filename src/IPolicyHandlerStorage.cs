@@ -5,7 +5,7 @@ namespace PoliNorError.Extensions.Http
 	/// <summary>
 	/// This interface represents an storage of <see cref=" System.Net.Http.DelegatingHandler"/>, primarily for internal use.
 	/// </summary>
-	public interface IPolicyHandlerStorage<TStorage> where TStorage : IPolicyHandlerStorage<TStorage>
+	public interface IPolicyHandlerStorage<out TStorage> where TStorage : IPolicyHandlerStorage<TStorage>
 	{
 		/// <summary>
 		/// Adds <see cref="System.Net.Http.DelegatingHandler"/> that uses policy to handle errors.
