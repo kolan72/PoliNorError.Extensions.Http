@@ -8,6 +8,8 @@ namespace PoliNorError.Extensions.Http
 	/// </summary>
 	public class ConfigurableHttpErrorFilter : HttpErrorFilterCriteria
 	{
+		internal ConfigurableHttpErrorFilter(){}
+
 		internal StatusCodesToHandle _statusCodesToHandle = new StatusCodesToHandle();
 
 		public ConfigurableHttpErrorFilter OrInformational() => OrStatusCodeCategory(StatusCodesCategory.Status1XX);
