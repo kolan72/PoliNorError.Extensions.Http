@@ -31,6 +31,8 @@ namespace PoliNorError.Extensions.Http.Tests
 		{
 			var store = HttpErrorFilter.HandleHttpRequestException();
 			Assert.That(store.IncludeHttpRequestException, Is.True);
+			store.OrStatusCode(HttpStatusCode.BadRequest);
+			Assert.That(store.Contains(HttpStatusCode.BadRequest), Is.True);
 		}
 
 		[Test]
