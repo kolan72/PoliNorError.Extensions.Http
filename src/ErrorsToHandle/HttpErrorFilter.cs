@@ -9,7 +9,7 @@ namespace PoliNorError.Extensions.Http
 		/// Creates <see cref="ConfigurableHttpErrorFilter"/> that handles <see cref="HttpRequestException"/>.
 		/// </summary>
 		/// <returns></returns>
-		public static ConfigurableHttpErrorFilter HandleHttpRequestException() => new ConfigurableHttpErrorFilter() { IncludeHttpRequestException = true };
+		public static ConfigurableHttpErrorFilter HandleHttpRequestException() => ConfigurableHttpErrorFilter.CreateWithHttpRequestException();
 
 		/// <summary>
 		/// Filters status codes that are not in the range 200-299.
