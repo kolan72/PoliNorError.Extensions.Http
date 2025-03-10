@@ -22,7 +22,7 @@ namespace Fallback
 				.AddCatHttpClient()
 				.WithResiliencePipeline((emptyBuilder) => {
 					return emptyBuilder
-							.AddPolicyHandler((string context, IServiceProvider sp) =>
+							.AddPolicyHandler((string context, IServiceProvider __) =>
 											CatPolicies.GetOuterFallbackPolicy(loggerTest, context))
 							.AddPolicyHandler((IServiceProvider sp) => {
 								var innerLogger = sp.GetRequiredService<ILogger>();
