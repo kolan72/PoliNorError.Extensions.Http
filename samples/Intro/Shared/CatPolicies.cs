@@ -21,9 +21,9 @@ namespace Shared
 							.WithPolicyName(policyName)
 							.WithErrorProcessorOf((Exception ex, ProcessingErrorInfo pi) =>
 								{
-									logger.LogError(ex, 
-													"Policy {PolicyName} processed exception on {Attempt} attempt:", 
-													policyName, 
+									logger.LogError(ex,
+													"Policy {PolicyName} handled an exception on attempt {Attempt}:", 
+													policyName,
 													((RetryProcessingErrorInfo)pi).RetryCount + 1);
 									if (ex is FailedHttpResponseException failedException)
 									{
@@ -33,15 +33,17 @@ namespace Shared
 							.AddPolicyResultHandler<HttpResponseMessage>(pr =>
 							{
 								if (pr.IsPolicySuccess)
-									logger.LogInformation("Policy '{PolicyName}' handled delegate successfully", pr.PolicyName);
+									logger.LogInformation("Policy {PolicyName} handled delegate successfully", pr.PolicyName);
 								else if (pr.IsFailed)
 								{
-									logger.LogWarning("{Errors} exceptions were thrown during handling by '{PolicyName}'.", 
+									logger.LogWarning("{Errors} exceptions were thrown during handling by {PolicyName}.", 
 														pr.Errors.Count(), 
 														pr.PolicyName);
 									if (pr.UnprocessedError is not null)
 									{
-										logger.LogError("UnprocessedError: {UnprocessedError}", pr.UnprocessedError.Message);
+										logger.LogError(pr.UnprocessedError, 
+														"UnprocessedError – an exception that was not handled by error processors of the {PolicyName}", 
+														policyName);
 									}
 								}
 							})
@@ -53,50 +55,49 @@ namespace Shared
 			const string policyName = "OuterAskCatRetryPolicy";
 			return new RetryPolicy(2)
 							   .WithPolicyName(policyName)
-							   .WithErrorProcessorOf(ex => 
-
-									logger.LogError("Policy {PolicyName} processed exception: {Message}",
-													policyName, 
-													ex.Message)
-							   )
-							   .AddPolicyResultHandler<HttpResponseMessage>(pr =>
+							   .WithErrorProcessorOf(ex =>
 							   {
-								   if (pr.IsPolicySuccess)
-									   logger.LogInformation("Policy '{PolicyName}' handled delegate successfully", pr.PolicyName);
+								   logger.LogError(ex,
+												   "Policy {PolicyName} handled exception: {ExceptionMessage}",
+												   policyName, ex.Message);
 							   })
 							   .WithErrorProcessorOf((_) =>
 											   AnsiConsole.Status()
-												.Start("Cat needs a little rest...", _ =>
-												{
-													Thread.Sleep(3000);
-												})
-								);
+												.Start("Cat needs a little rest...", _ => Thread.Sleep(3000))
+								)
+							   .AddPolicyResultHandler<HttpResponseMessage>(pr =>
+							   {
+								   if (pr.UnprocessedError is not null)
+								   {
+									   logger.LogError(pr.UnprocessedError, 
+														"UnprocessedError – an exception that was not handled by error processors of the {PolicyName}",
+														policyName);
+								   }
+							   });
 		}
 
 		public static FallbackPolicyBase GetOuterFallbackPolicy(ILogger logger, string customAnswer)
 		{
-			var fallbackPolicy = new FallbackPolicy()
+			return new FallbackPolicy()
 									.WithPolicyName("CatAnswerFallbackPolicy")
 									.WithAsyncFallbackFunc((_) => Task.FromResult(GetCustomFallbackCatAnswer(customAnswer)))
 									.AddPolicyResultHandler<HttpResponseMessage>(pr =>
 									{
 										if (pr.IsPolicySuccess)
-											logger.LogInformation("Policy '{PolicyName}' handled delegate successfully", pr.PolicyName);
+											logger.LogInformation("Policy {PolicyName} handled delegate successfully", pr.PolicyName);
 									});
-			return fallbackPolicy;
 		}
 
 		public static FallbackPolicyBase GetOuterFallbackPolicy(ILogger logger)
 		{
-			var fallbackPolicy = new FallbackPolicy()
+			return new FallbackPolicy()
 									.WithPolicyName("CatAnswerFallbackPolicy")
 									.WithAsyncFallbackFunc((_) => Task.FromResult(UsualFallbackCatAnswer))
 									.AddPolicyResultHandler<HttpResponseMessage>(pr =>
 									{
 										if (pr.IsPolicySuccess)
-											logger.LogInformation("Policy '{PolicyName}' handled delegate successfully", pr.PolicyName);
+											logger.LogInformation("Policy {PolicyName} handled delegate successfully", pr.PolicyName);
 									});
-			return fallbackPolicy;
 		}
 
 		private static HttpResponseMessage GetCustomFallbackCatAnswer(string customAnswer)
