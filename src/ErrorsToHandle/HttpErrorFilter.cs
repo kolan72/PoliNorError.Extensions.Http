@@ -28,14 +28,14 @@ namespace PoliNorError.Extensions.Http
 		/// </summary>
 		/// <param name="statusCode"><see cref="HttpStatusCode"/> to filter.</param>
 		/// <returns></returns>
-		public static ConfigurableHttpErrorFilter HandleStatusCode(HttpStatusCode statusCode) => new ConfigurableHttpErrorFilter() { _statusCodesToHandle = StatusCodesToHandle.HandleStatusCode(statusCode) };
+		public static ConfigurableHttpErrorFilter HandleStatusCode(HttpStatusCode statusCode) => new ConfigurableHttpErrorFilter(StatusCodesToHandle.HandleStatusCode(statusCode));
 
 		/// <summary>
 		/// Filters <paramref name="statusCode"/> status code.
 		/// </summary>
 		/// <param name="statusCode">Status code to filter.</param>
 		/// <returns></returns>
-		public static ConfigurableHttpErrorFilter HandleStatusCode(int statusCode) => new ConfigurableHttpErrorFilter() { _statusCodesToHandle = StatusCodesToHandle.HandleStatusCode(statusCode) };
+		public static ConfigurableHttpErrorFilter HandleStatusCode(int statusCode) => new ConfigurableHttpErrorFilter(StatusCodesToHandle.HandleStatusCode(statusCode));
 
 		/// <summary>
 		/// Creates <see cref="ConfigurableHttpErrorFilter"/> that handles <see cref="HttpStatusCode"/>> from <see cref="StatusCodesCategory"/>.
@@ -45,7 +45,7 @@ namespace PoliNorError.Extensions.Http
 		public static ConfigurableHttpErrorFilter HandleStatusCodeCategory(StatusCodesCategory statusCodesCategory)
 		{
 			var statusCodesToHandle = StatusCodesToHandle.HandleStatusCodeCategory(statusCodesCategory);
-			return new ConfigurableHttpErrorFilter() { _statusCodesToHandle = statusCodesToHandle };
+			return new ConfigurableHttpErrorFilter(statusCodesToHandle);
 		}
 
 		/// <summary>
@@ -60,7 +60,7 @@ namespace PoliNorError.Extensions.Http
 		/// <returns>HttpErrorsToHandle</returns>
 		public static ConfigurableHttpErrorFilter HandleTransientHttpErrors()
 		{
-			return new ConfigurableHttpErrorFilter() { _statusCodesToHandle = StatusCodesToHandle.HandleTransientHttpStatusCodes(), IncludeHttpRequestException = true };
+			return new ConfigurableHttpErrorFilter(StatusCodesToHandle.HandleTransientHttpStatusCodes()){ IncludeHttpRequestException = true };
 		}
 
 		/// <summary>
@@ -74,7 +74,7 @@ namespace PoliNorError.Extensions.Http
 		/// <returns>HttpErrorsToHandle</returns>
 		public static ConfigurableHttpErrorFilter HandleTransientHttpStatusCodes()
 		{
-			return new ConfigurableHttpErrorFilter() { _statusCodesToHandle = StatusCodesToHandle.HandleTransientHttpStatusCodes() };
+			return new ConfigurableHttpErrorFilter(StatusCodesToHandle.HandleTransientHttpStatusCodes());
 		}
 	}
 }
