@@ -11,7 +11,7 @@
     <Copyright>Copyright 2025 Andrey Kolesnichenko</Copyright>
     <Description>The library provides an outgoing request resiliency pipeline for `HttpClient`, using policies from the PoliNorError library.</Description>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>HttpClient Exception Handling Error Resilience Transient Policy Retry Fallback</PackageTags>
+    <PackageTags>HttpClient Exception Handling Error Resilience Transient Policy Retry Fallback Pipeline</PackageTags>
     <PackageProjectUrl>https://github.com/kolan72/PoliNorError.Extensions.Http</PackageProjectUrl>
     <RepositoryUrl>https://github.com/kolan72/PoliNorError.Extensions.Http</RepositoryUrl>
   </PropertyGroup>
