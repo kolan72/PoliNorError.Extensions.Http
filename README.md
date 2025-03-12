@@ -92,7 +92,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 Additionally, you can include custom failure status codes or categories in the final handler filter:
 ```csharp
 		...
-		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()
+		.AsFinalHandler(HttpErrorFilter.HandleHttpRequestException()
 			// ✔ Also adds 5XX status codes to the response handling filter.
 			.OrServerError())
 		...
