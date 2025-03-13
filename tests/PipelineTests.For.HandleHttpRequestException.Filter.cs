@@ -9,16 +9,28 @@ namespace PoliNorError.Extensions.Http.Tests
 	internal partial class PipelineTests
 	{
 		[Test]
-		public void Should_HandleHttpRequestException_Filters_Correctly()
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_HandleHttpRequestException_Filters_Correctly(bool filterExists)
 		{
 			var i = 0;
 
 			var services = new ServiceCollection();
 
+			HttpErrorFilterCriteria criteria;
+			if (filterExists)
+			{
+				criteria = HttpErrorFilter.HandleHttpRequestException();
+			}
+			else
+			{
+				criteria = HttpErrorFilter.None();
+			}
+
 			services.AddFakeHttpClient()
 			.WithResiliencePipeline((empyConfig) => empyConfig
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
-														.AsFinalHandler(HttpErrorFilter.HandleHttpRequestException())
+														.AsFinalHandler(criteria)
 														);
 
 			var serviceProvider = services.BuildServiceProvider();
@@ -30,10 +42,21 @@ namespace PoliNorError.Extensions.Http.Tests
 
 				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
 
-				Assert.That(exception != null && exception.HasFailedResponse, Is.False);
-				Assert.That(exception != null && exception.IsErrorExpected, Is.True);
-				Assert.That(i, Is.EqualTo(3));
-				Assert.That(exception != null && exception.ThrownByFinalHandler, Is.True);
+				Assert.That(exception?.HasFailedResponse == true, Is.False);
+
+				if (filterExists)
+				{
+					Assert.That(exception?.IsErrorExpected == true, Is.True);
+					Assert.That(i, Is.EqualTo(3));
+				}
+				else
+				{
+					Assert.That(exception?.IsErrorExpected == true, Is.False);
+					Assert.That(i, Is.EqualTo(0));
+				}
+
+				Assert.That(exception?.ThrownByFinalHandler == true, Is.True);
+
 				Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
 			}
 		}
