@@ -118,6 +118,7 @@
     <Compile Include="PipelineTests.For.HandleNone.Filter.cs" />
     <Compile Include="PipelineTests.For.HandleStatusCode.Filter.cs" />
     <Compile Include="PipelineTests.For.HandleTransientHttpErrors.Filter.cs" />
+    <Compile Include="PipelineTests.For.InnerException.Of.HttpPolicyResultException.cs" />
     <Compile Include="PipelineTests.WithFakeHttpDelegatingHandler.WithOneHandler.cs" />
     <Compile Include="PipelineTests.WithFakeHttpDelegatingHandler.WitthManyPolicyHandlers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
