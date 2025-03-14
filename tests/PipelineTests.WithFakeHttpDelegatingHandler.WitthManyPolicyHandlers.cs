@@ -45,6 +45,7 @@ namespace PoliNorError.Extensions.Http.Tests
 					Assert.That(exception.IsErrorExpected, Is.False);
 					Assert.That(i, Is.EqualTo(0));
 					Assert.That(k, Is.EqualTo(0));
+					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
 				}
 				else
 				{
@@ -52,6 +53,7 @@ namespace PoliNorError.Extensions.Http.Tests
 					Assert.That(m, Is.EqualTo(3));
 					Assert.That(k, Is.EqualTo(12));
 					Assert.That(i, Is.EqualTo(48));
+					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(ArgumentException)));
 				}
 				Assert.That(exception.FailedResponseData, Is.Null);
 				Assert.That(exception.ThrownByFinalHandler, Is.False);
