@@ -98,8 +98,7 @@ namespace PoliNorError.Extensions.Http.Tests
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => k++))
 														.IncludeException<ArgumentException>()
 														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
-														.AsFinalHandler(HttpErrorFilter.None())
-														.IncludeException<ArgumentException>())
+														.AsFinalHandler(HttpErrorFilter.None()))
 			.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
 
 			var serviceProvider = services.BuildServiceProvider();
