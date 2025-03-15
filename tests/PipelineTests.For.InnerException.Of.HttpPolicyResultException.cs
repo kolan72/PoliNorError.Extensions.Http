@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using System;
 using System.Net.Http;
 
 namespace PoliNorError.Extensions.Http.Tests
@@ -59,6 +60,37 @@ namespace PoliNorError.Extensions.Http.Tests
 
 				Assert.That(exception?.ThrownByFinalHandler == true, Is.False);
 				Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
+			}
+		}
+
+		[Test]
+		public void Should_Have_FinalHandler_Exception_As_InnerException_With_One_PipelineHandler_And_ExternalHandler_That_Throws()
+		{
+			var testPolicy = new PolicyWithNotFilterableError(() => throw new ArgumentException("Test"), typeof(ArgumentException));
+
+			HttpErrorFilterCriteria criteria = HttpErrorFilter.None();
+
+			var services = new ServiceCollection();
+
+			services.AddFakeHttpClient()
+			.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddPolicyHandler(testPolicy)
+														.AsFinalHandler(criteria)
+														);
+
+			var serviceProvider = services.BuildServiceProvider();
+
+			using (var scope = serviceProvider.CreateScope())
+			{
+				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+
+				Assert.That(exception?.HasFailedResponse == true, Is.False);
+
+				Assert.That(exception?.ThrownByFinalHandler == true, Is.True);
+				Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
 			}
 		}
 	}
