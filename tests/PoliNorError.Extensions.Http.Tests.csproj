@@ -76,6 +76,9 @@
     <Reference Include="PoliNorError, Version=2.21.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\PoliNorError.2.21.0\lib\netstandard2.0\PoliNorError.dll</HintPath>
     </Reference>
+    <Reference Include="RichardSzalay.MockHttp, Version=7.0.0.0, Culture=neutral, PublicKeyToken=7059d3aca2a9eddc, processorArchitecture=MSIL">
+      <HintPath>..\packages\RichardSzalay.MockHttp.7.0.0\lib\netstandard2.0\RichardSzalay.MockHttp.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.6.0\lib\net462\System.Buffers.dll</HintPath>

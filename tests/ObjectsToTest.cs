@@ -58,14 +58,16 @@ namespace PoliNorError.Extensions.Http.Tests
 		public async Task<PolicyResult<T>> HandleAsync<T>(Func<CancellationToken, Task<T>> func, bool configureAwait = false, CancellationToken token = default)
 		{
 			return await _simplePolicyProcessor.ExcludeError(ex => ex.GetType() == _exceptionType).ExecuteAsync<T>(async(ct) => {
+				T result = default;
 				try
 				{
-					await func(ct).ConfigureAwait(configureAwait);
+					result = await func(ct).ConfigureAwait(configureAwait);
 				}
 				catch (Exception)
 				{
 					_exceptionGenerator();
 				}
+				_exceptionGenerator();
 				return default;
 			}, token) ;
 		}
