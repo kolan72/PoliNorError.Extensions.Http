@@ -116,6 +116,7 @@
     <Compile Include="FakeDelegatingHandlers.cs" />
     <Compile Include="HttpResponseMessageToHandleByPolicyAdapterTests.cs" />
     <Compile Include="ObjectsToTest.cs" />
+    <Compile Include="PipelineTests.For.AddRetryHandler.cs" />
     <Compile Include="PipelineTests.For.HandleAllNonSuccessStatusCodes.Filter.cs" />
     <Compile Include="PipelineTests.For.HandleHttpRequestException.Filter.cs" />
     <Compile Include="PipelineTests.For.HandleNone.Filter.cs" />
