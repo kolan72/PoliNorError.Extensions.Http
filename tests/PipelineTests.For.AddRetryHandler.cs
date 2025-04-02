@@ -22,15 +22,15 @@ namespace PoliNorError.Extensions.Http.Tests
 																		.AsFinalHandler(criteria);
 
 			var invoker = new HttpClientWithPipelineInvoker();
-			invoker.InvokeHttpClientWithFailure<HttpPolicyResultException>(pipelineFactory);
-
+			var exception = invoker.InvokeHttpClientWithFailure<HttpPolicyResultException>(pipelineFactory);
+			Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
 			Assert.That(i, Is.EqualTo(3));
 		}
 	}
 
 	internal class HttpClientWithPipelineInvoker
 	{
-		public void InvokeHttpClientWithFailure<TFailure>(Func<IEmptyPipelineBuilder, IPipelineBuilder> pipelineFactory) where TFailure : Exception
+		public TFailure InvokeHttpClientWithFailure<TFailure>(Func<IEmptyPipelineBuilder, IPipelineBuilder> pipelineFactory) where TFailure : Exception
 		{
 			var services = new ServiceCollection();
 			services
@@ -38,16 +38,12 @@ namespace PoliNorError.Extensions.Http.Tests
 				.WithResiliencePipeline(pipelineFactory);
 
 			using (var serviceProvider = services.BuildServiceProvider())
+			using (var scope = serviceProvider.CreateScope())
 			{
-				using (var scope = serviceProvider.CreateScope())
-				{
-					var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-					var exception = Assert.ThrowsAsync<TFailure>(async () => await sut.SendAsync(request));
-
-					Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
-				}
+				return Assert.ThrowsAsync<TFailure>(async () => await sut.SendAsync(request));
 			}
 		}
 	}
