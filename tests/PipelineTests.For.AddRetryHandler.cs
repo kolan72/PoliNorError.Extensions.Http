@@ -48,6 +48,24 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
 			Assert.That(i, Is.EqualTo(3));
 		}
+
+		[Test]
+		public void Should_Handle_Retries_Correctly_When_Single_AddRetryHandler_FromFactoryWithContext_Is_Used()
+		{
+			var i = 0;
+
+			var criteria = HttpErrorFilter.HandleHttpRequestException();
+
+			IPipelineBuilder<int> pipelineFactory(IEmptyPipelineBuilder<int> empyConfig) =>
+																		empyConfig
+																		.AddRetryHandler((context, _) => 
+																			new RetryPolicy(context).WithErrorProcessorOf((__) => i++))
+																		.AsFinalHandler(criteria);
+			var invoker = new HttpClientWithPipelineInvoker();
+			var exception = invoker.InvokeHttpClientWithFailureWithRetryContext<HttpPolicyResultException, int>(pipelineFactory, 3);
+			Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
+			Assert.That(i, Is.EqualTo(3));
+		}
 	}
 
 	internal class HttpClientWithPipelineInvoker
@@ -59,14 +77,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				.AddFakeHttpClient()
 				.WithResiliencePipeline(pipelineFactory);
 
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
-
-				return Assert.ThrowsAsync<TFailure>(async () => await sut.SendAsync(request));
-			}
+			return Send<TFailure>(services);
 		}
 
 		public TFailure InvokeHttpClientWithFailureWithRetryProvider<TFailure>(Func<IEmptyPipelineBuilder, IPipelineBuilder> pipelineFactory) where TFailure : Exception
@@ -78,6 +89,21 @@ namespace PoliNorError.Extensions.Http.Tests
 				.AddFakeHttpClient()
 				.WithResiliencePipeline(pipelineFactory);
 
+			return Send<TFailure>(services);
+		}
+
+		public TFailure InvokeHttpClientWithFailureWithRetryContext<TFailure, TContext>(Func<IEmptyPipelineBuilder<TContext>, IPipelineBuilder<TContext>> pipelineFactory, TContext context) where TFailure : Exception
+		{
+			var services = new ServiceCollection();
+			services
+				.AddFakeHttpClient()
+				.WithResiliencePipeline(pipelineFactory, context);
+
+			return Send<TFailure>(services);
+		}
+
+		private TFailure Send<TFailure>(IServiceCollection services) where TFailure : Exception
+		{
 			using (var serviceProvider = services.BuildServiceProvider())
 			using (var scope = serviceProvider.CreateScope())
 			{

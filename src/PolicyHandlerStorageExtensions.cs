@@ -13,5 +13,10 @@ namespace PoliNorError.Extensions.Http
 		{
 			return storage.AddPolicyHandler(retryPolicyFactory);
 		}
+
+		public static TStorage AddRetryHandler<TStorage, TContext>(this IPolicyHandlerStorage<TStorage, TContext> storage, Func<TContext, IServiceProvider, RetryPolicy> retryPolicyFactory) where TStorage : IPolicyHandlerStorage<TStorage, TContext>
+		{
+			return storage.AddPolicyHandler(retryPolicyFactory);
+		}
 	}
 }
