@@ -58,7 +58,7 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			IPipelineBuilder<int> pipelineFactory(IEmptyPipelineBuilder<int> empyConfig) =>
 																		empyConfig
-																		.AddRetryHandler((context, _) => 
+																		.AddRetryHandler((context, _) =>
 																			new RetryPolicy(context).WithErrorProcessorOf((__) => i++))
 																		.AsFinalHandler(criteria);
 			var invoker = new HttpClientWithPipelineInvoker();
