@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -38,7 +39,11 @@ namespace PoliNorError.Extensions.Http.Tests
 				Assert.That(i, Is.EqualTo(3));
 				Assert.That(exception.ThrownByFinalHandler, Is.True);
 				Assert.That((int)exception.FailedResponseData.StatusCode, Is.EqualTo(statusCodeToCheck));
+
 				Assert.That(exception.InnermostPolicyResult, Is.EqualTo(exception.PolicyResult));
+				Assert.That(exception.PolicyResult.Errors.Count(), Is.EqualTo(4));
+				Assert.That(exception.PolicyResult.UnprocessedError.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
+
 				Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
 			}
 		}

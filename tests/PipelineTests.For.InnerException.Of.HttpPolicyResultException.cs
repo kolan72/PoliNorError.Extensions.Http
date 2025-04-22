@@ -93,5 +93,36 @@ namespace PoliNorError.Extensions.Http.Tests
 				Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
 			}
 		}
+
+		[Test]
+		public void Should_Have_FinalHandler_Exception_As_InnerException_With_One_PipelineHandler_And_ExternalHandler_That_Ok()
+		{
+			var testPolicy = new PolicyWithNotFilterableError(() => throw new ArgumentException("Test"), typeof(ArgumentException));
+
+			HttpErrorFilterCriteria criteria = HttpErrorFilter.None();
+
+			var services = new ServiceCollection();
+
+			services.AddFakeSussessHttpClient()
+			.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddPolicyHandler(testPolicy)
+														.AsFinalHandler(criteria)
+														);
+
+			var serviceProvider = services.BuildServiceProvider();
+
+			using (var scope = serviceProvider.CreateScope())
+			{
+				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+				var request = new HttpRequestMessage(HttpMethod.Get, "http://any.localhost/any");
+
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+
+				Assert.That(exception?.HasFailedResponse == true, Is.False);
+
+				Assert.That(exception?.ThrownByFinalHandler == true, Is.True);
+				Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
+			}
+		}
 	}
 }
