@@ -111,6 +111,7 @@
   <ItemGroup>
     <Compile Include="HttpErrorFilterTests.cs" />
     <Compile Include="FakeDelegatingHandlers.cs" />
+    <Compile Include="HttpPolicyResultHandlersTests.cs" />
     <Compile Include="HttpPolicyResultHandlerTests.cs" />
     <Compile Include="HttpResponseMessageToHandleByPolicyAdapterTests.cs" />
     <Compile Include="ObjectsToTest.cs" />
