@@ -8,7 +8,7 @@ namespace PoliNorError.Extensions.Http.Tests
 		public void Should_AllowSettingConfigurationHandler()
 		{
 			bool wasCalled = false;
-			var options = new PolicyBehaviorOptions
+			var options = new PolicyOptions
 			{
 				ConfigurePolicyResultHandling = _ => wasCalled = true
 			};

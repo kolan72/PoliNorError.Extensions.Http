@@ -2,7 +2,7 @@
 
 namespace PoliNorError.Extensions.Http
 {
-	public class PolicyBehaviorOptions
+	public class PolicyOptions
 	{
 		public Action<IHttpPolicyResultHandlers> ConfigurePolicyResultHandling { get; set; }
 	}
