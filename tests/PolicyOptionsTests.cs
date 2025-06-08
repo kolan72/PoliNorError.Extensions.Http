@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 
 namespace PoliNorError.Extensions.Http.Tests
 {
@@ -39,5 +40,15 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(invoked, Is.True);
 		}
 
+		[Test]
+		public void Should_SetConfigureErrorFilter()
+		{
+			var options = new PolicyOptions();
+			options.ConfigureErrorFilter = (ef) => ef.ExcludeError<InvalidOperationException>();
+			
+			var rp = new RetryPolicy(1).AddErrorFilter(options.ConfigureErrorFilter);
+			var result = rp.Handle(() => throw new InvalidOperationException());
+			Assert.That(result.ErrorFilterUnsatisfied, Is.True);
+		}
 	}
 }

@@ -6,5 +6,6 @@ namespace PoliNorError.Extensions.Http
 	{
 		public Action<IHttpPolicyResultHandlers> ConfigurePolicyResultHandling { get; set; }
 		public Action<IBulkErrorProcessor> ConfigureErrorProcessing { get; set; }
+		public Func<IEmptyCatchBlockFilter, NonEmptyCatchBlockFilter> ConfigureErrorFilter { get; set; }
 	}
 }
