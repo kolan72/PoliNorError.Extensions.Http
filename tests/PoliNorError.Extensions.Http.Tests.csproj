@@ -127,6 +127,7 @@
     <Compile Include="PolicyOptionsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RetryCountTests.cs" />
+    <Compile Include="RetryPolicyOptionsTests.cs" />
     <Compile Include="ServiceCollectionExtensionsForFakeHttpClient.cs" />
   </ItemGroup>
   <ItemGroup>
