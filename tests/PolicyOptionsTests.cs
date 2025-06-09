@@ -45,10 +45,23 @@ namespace PoliNorError.Extensions.Http.Tests
 		{
 			var options = new PolicyOptions();
 			options.ConfigureErrorFilter = (ef) => ef.ExcludeError<InvalidOperationException>();
-			
+
 			var rp = new RetryPolicy(1).AddErrorFilter(options.ConfigureErrorFilter);
 			var result = rp.Handle(() => throw new InvalidOperationException());
 			Assert.That(result.ErrorFilterUnsatisfied, Is.True);
+		}
+
+		[Test]
+		public void Should_SetAndRetrievePolicyName()
+		{
+			// Arrange
+			var options = new PolicyOptions();
+
+			// Act
+			options.PolicyName = "MyCustomPolicy";
+
+			// Assert
+			Assert.That(options.PolicyName, Is.EqualTo("MyCustomPolicy"));
 		}
 	}
 }
