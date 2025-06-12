@@ -9,6 +9,13 @@ namespace PoliNorError.Extensions.Http
 			return storage.AddRetryHandler(RetryCountInfo.Limited(retryCount), options);
 		}
 
+		public static TStorage AddRetryHandler<TStorage>(this IPolicyHandlerStorage<TStorage> storage, int retryCount, Action<RetryPolicyOptions> configure = null) where TStorage : IPolicyHandlerStorage<TStorage>
+		{
+			var options = new RetryPolicyOptions();
+			configure?.Invoke(options);
+			return storage.AddRetryHandler(retryCount, options);
+		}
+
 		internal static TStorage AddRetryHandler<TStorage>(this IPolicyHandlerStorage<TStorage> storage, RetryCountInfo retryCount, RetryPolicyOptions options) where TStorage : IPolicyHandlerStorage<TStorage>
 		{
 			if(options is null)
@@ -35,7 +42,7 @@ namespace PoliNorError.Extensions.Http
 			}
 
 			if(!(options.PolicyName is null))
-			{ 
+			{
 				res.WithPolicyName(options.PolicyName);
 			}
 			return storage.AddPolicyHandler(res);
