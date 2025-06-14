@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Version>0.1.1</Version>
+    <Version>0.2.0</Version>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>PoliNorError.png</PackageIcon>
     <PackageReadmeFile>NuGet.md</PackageReadmeFile>
@@ -14,7 +14,7 @@
     <PackageTags>HttpClient Exception Handling Error Resilience Transient Policy Retry Fallback Pipeline</PackageTags>
     <PackageProjectUrl>https://github.com/kolan72/PoliNorError.Extensions.Http</PackageProjectUrl>
     <RepositoryUrl>https://github.com/kolan72/PoliNorError.Extensions.Http</RepositoryUrl>
-    <AssemblyVersion>0.1.1.0</AssemblyVersion>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
