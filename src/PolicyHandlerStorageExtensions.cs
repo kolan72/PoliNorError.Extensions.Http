@@ -2,7 +2,7 @@
 
 namespace PoliNorError.Extensions.Http
 {
-	public static class PolicyHandlerStorageExtensions
+	public static partial class PolicyHandlerStorageExtensions
 	{
 		/// <summary>
 		/// Adds a handler based on a RetryPolicy to a pipeline builder

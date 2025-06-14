@@ -24,7 +24,7 @@ namespace Shared
 									logger.LogError(ex,
 													"Policy {PolicyName} handled an exception on attempt {Attempt}:", 
 													policyName,
-													((RetryProcessingErrorInfo)pi).RetryCount + 1);
+													pi.GetRetryCount() + 1);
 									if (ex is FailedHttpResponseException failedException)
 									{
 										logger.LogWarning(ex, "The cat's answer is error. StatusCode {StatusCode}", failedException.FailedResponseData.StatusCode);
