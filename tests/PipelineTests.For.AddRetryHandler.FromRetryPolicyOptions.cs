@@ -103,6 +103,60 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_Outer_PolicyHandler_Be_Configured_By_ConfigureErrorFilter(bool shouldMatch)
+		{
+			var fakeHttpDelegatingHandler = new DelegatingHandlerThatThrowsNotHttpException(DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation);
+			PolicyWithNotFilterableError testPolicy;
+			if (shouldMatch)
+			{
+				testPolicy = new PolicyWithNotFilterableError(() => throw new ArgumentException("Test"), typeof(ArgumentException));
+			}
+			else
+			{
+				testPolicy = new PolicyWithNotFilterableError(() => throw new InvalidCastException("Test"), typeof(InvalidCastException));
+			}
+
+			RetryPolicyOptions options;
+			int m = 0;
+
+			options = new RetryPolicyOptions()
+			{
+				ConfigureErrorProcessing = (bep) => bep.WithErrorProcessorOf((_) => m++)
+			};
+			if (!shouldMatch)
+			{
+				options.ConfigureErrorFilter = (ef) => ef.ExcludeError<InvalidCastException>(errorType: CatchBlockFilter.ErrorType.InnerError);
+			}
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddRetryHandler(3, options)
+															.AddPolicyHandler(testPolicy)
+															.AsFinalHandler(HttpErrorFilter.None()))
+				.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
+		
+			using (var serviceProvider = services.BuildServiceProvider())
+			using (var scope = serviceProvider.CreateScope())
+			{
+				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+				_  = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+				if (shouldMatch)
+				{
+					Assert.That(m, Is.EqualTo(3));
+				}
+				else
+				{
+					Assert.That(m, Is.EqualTo(0));
+				}
+			}
+		}
+
+		[Test]
 		[TestCase(true, false)]
 		[TestCase(false, false)]
 		[TestCase(true, true)]
