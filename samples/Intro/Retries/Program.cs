@@ -49,7 +49,7 @@ namespace Retries
 
 			Thread.Sleep(1000);
 
-			using (var provider = services.BuildServiceProvider())
+			await using (var provider = services.BuildServiceProvider())
 			{
 				var service = provider.GetRequiredService<IAskCatService>();
 				await CatFactManager.GetCatFactOnRetry(service, loggerTest);
