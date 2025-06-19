@@ -146,6 +146,7 @@ One of these methods allows adding a handler via `RetryPolicyOptions` and is res
 - Policy result handling,
 - Error filters,
 - Policy naming,
+- Delay between retries,
 - And ultimately registering the policy with `AddPolicyHandler`.
 
 For example:
@@ -176,7 +177,7 @@ var retryOptions = new RetryPolicyOptions()
 				}
 			}
 		),
-	RetryDelay	= ConstantRetryDelay.Create(TimeSpan.FromSeconds(1))	
+	RetryDelay = ConstantRetryDelay.Create(TimeSpan.FromSeconds(1))	
 };
 ```
 This example configures `RetryPolicyOptions` with:
