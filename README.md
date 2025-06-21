@@ -140,7 +140,7 @@ catch (Exception ex)
 
 ## 🔁 Adding Handlers Based on `RetryPolicy` Using the `AddRetryHandler` Extension Methods.
 
-The `AddRetryHandler` extension methods provide a fluent way to attach a retry policy to an HTTP message handler pipeline. 
+The `AddRetryHandler` extension methods provide a fluent way to attach a `RetryPolicy` to an HTTP message handler pipeline. 
 One of these methods allows adding a handler via `RetryPolicyOptions` and is responsible for setting up `RetryPolicy` details, including:
 - Error processing,
 - Policy result handling,
@@ -177,6 +177,7 @@ var retryOptions = new RetryPolicyOptions()
 				}
 			}
 		),
+		
 	RetryDelay = ConstantRetryDelay.Create(TimeSpan.FromSeconds(1))	
 };
 ```
@@ -186,9 +187,9 @@ This example configures `RetryPolicyOptions` with:
 - An error processor (logs exceptions with attempt numbers),
 - An error filter (excludes `SomeException`),
 - A result handler (logs warnings about exception counts),
-- A 1-second constant delay between retries."
+- A 1-second constant delay between retries.
 
-Applies `RetryPolicyOptions` and `AddRetryHandler` in the pipeline:
+This is how `RetryPolicyOptions` is passed to `AddRetryHandler` in the pipeline:
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 	{
@@ -203,6 +204,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 		...
 	)
 ```
+You can also configure `RetryPolicy` details inline using the `AddRetryHandler` overload that accepts an `Action<RetryPolicyOptions>`.
 
 ## 📜 `HttpPolicyResultException` properties
 
