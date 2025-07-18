@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace PoliNorError.Extensions.Http.Tests
 {
@@ -137,7 +138,7 @@ namespace PoliNorError.Extensions.Http.Tests
 															.AddPolicyHandler(testPolicy)
 															.AsFinalHandler(HttpErrorFilter.None()))
 				.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
-		
+
 			using (var serviceProvider = services.BuildServiceProvider())
 			using (var scope = serviceProvider.CreateScope())
 			{
@@ -213,13 +214,24 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
-		[TestCase(true)]
-		[TestCase(false)]
-		public void Should_ConfigurePolicyResultHandling_WhenSetInOptions(bool fromAction)
+		[TestCase(true, true)]
+		[TestCase(false,true)]
+		[TestCase(true, false)]
+		[TestCase(false, false)]
+		public void Should_ConfigurePolicyResultHandling_WhenSetInOptions(bool fromAction, bool isAsync)
 		{
 			var invoked = false;
 
-			void configure(IHttpPolicyResultHandlers handlers) => handlers.AddHandler((_, __) => invoked = true);
+			Action<IHttpPolicyResultHandlers> configure = null;
+
+			if (isAsync)
+			{
+				configure = (handlers) => handlers.AddHandler((_, __) => invoked = true);
+			}
+			else
+			{
+				configure = (handlers) => handlers.AddHandler(async(_, __) => {await Task.Delay(TimeSpan.FromTicks(1)); invoked = true; });
+			}
 
 			var services = new ServiceCollection();
 
