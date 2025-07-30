@@ -127,6 +127,7 @@
     <Compile Include="PipelineTests.WithFakeHttpDelegatingHandler.WitthManyPolicyHandlers.cs" />
     <Compile Include="PolicyOptionsTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RetryAfterHeaderTests.cs" />
     <Compile Include="RetryPolicyOptionsTests.cs" />
     <Compile Include="ServiceCollectionExtensionsForFakeHttpClient.cs" />
   </ItemGroup>
