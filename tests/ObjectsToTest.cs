@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq.Expressions;
+using System.Net.Http;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -70,6 +72,22 @@ namespace PoliNorError.Extensions.Http.Tests
 				_exceptionGenerator();
 				return default;
 			}, token) ;
+		}
+	}
+
+	internal static class FailedHttpResponseCreator
+	{
+		internal static FailedHttpResponse CreateFailedHttpResponse(HttpResponseMessage response)
+		{
+			return new FailedHttpResponse
+			{
+				ResponseHeaders = response.Headers,
+				StatusCode = response.StatusCode,
+				Content = string.Empty,
+				ContentType = "text/plain",
+				ResponseUri = new Uri("https://example.com"),
+				Version = HttpVersion.Version11
+			};
 		}
 	}
 }
