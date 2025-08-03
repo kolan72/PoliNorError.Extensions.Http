@@ -34,14 +34,14 @@ namespace PoliNorError.Extensions.Http
 
 	internal class HttpPolicyResultHandlers : IHttpPolicyResultHandlers
 	{
-		private readonly List<HttpPolicyResultHandler> _hanlders = new List<HttpPolicyResultHandler>();
+		private readonly List<IHttpPolicyResultHandler> _hanlders = new List<IHttpPolicyResultHandler>();
 
 		public IHttpPolicyResultHandlers AddHandler(Action<PolicyResult<HttpResponseMessage>, CancellationToken> syncHandler)
 		{
 			if (syncHandler == null)
 				throw new ArgumentNullException(nameof(syncHandler));
 
-			var handler = new HttpPolicyResultHandler(syncHandler);
+			var handler = new SyncHttpPolicyResultHandler(syncHandler);
 			_hanlders.Add(handler);
 			return this;
 		}
@@ -51,7 +51,7 @@ namespace PoliNorError.Extensions.Http
 			if (asyncHandler == null)
 				throw new ArgumentNullException(nameof(asyncHandler));
 
-			var handler = new HttpPolicyResultHandler(asyncHandler);
+			var handler = new AsyncHttpPolicyResultHandler(asyncHandler);
 			_hanlders.Add(handler);
 			return this;
 		}

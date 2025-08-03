@@ -16,7 +16,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			var syncHandler = new Action<PolicyResult<HttpResponseMessage>, CancellationToken>(
 				(_, __) =>
 				handlerCalled = true);
-			var policyHandler = new HttpPolicyResultHandler(syncHandler);
+			var policyHandler = new SyncHttpPolicyResultHandler(syncHandler);
 			var retryPolicy = new RetryPolicy(1);
 
 			// Act
@@ -38,7 +38,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				return Task.CompletedTask;
 			});
 
-			var policyHandler = new HttpPolicyResultHandler(asyncHandler);
+			var policyHandler = new AsyncHttpPolicyResultHandler(asyncHandler);
 			var retryPolicy = new RetryPolicy(1);
 
 			// Act
