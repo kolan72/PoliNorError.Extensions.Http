@@ -50,6 +50,11 @@ namespace PoliNorError.Extensions.Http
 
 			var res = func(options, bep);
 
+			if (options.ProcessRetryAfterHeader)
+			{
+				res.WithRetryAfterHeaderWait();
+			}
+
 			if (!(options.ConfigurePolicyResultHandling is null))
 			{
 				var handlers = new HttpPolicyResultHandlers();

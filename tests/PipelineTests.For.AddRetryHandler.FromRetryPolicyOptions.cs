@@ -1,9 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using NUnit.Framework;
-using NUnit.Framework.Constraints;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -354,6 +353,33 @@ namespace PoliNorError.Extensions.Http.Tests
 
 				_ = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
 				Assert.That(rd.AttemptsNumber, Is.EqualTo(3));
+			}
+		}
+
+		[Test]
+		public void Should_Respect_RetryAfter_Header()
+		{
+			var services = new ServiceCollection();
+
+			services
+				.AddFakeHttpClientWithRetryHeader()
+				.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddRetryHandler(1,
+															opt => opt.ProcessRetryAfterHeader = true
+														)
+														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			var serviceProvider = services.BuildServiceProvider();
+
+			using (var scope = serviceProvider.CreateScope())
+			{
+				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("httpclient-with-retryheader");
+				var request = new HttpRequestMessage(HttpMethod.Get, "http://any.localhost/any");
+
+				var sw = Stopwatch.StartNew();
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+				Assert.That(sw.Elapsed.Seconds, Is.GreaterThanOrEqualTo(1));
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
 			}
 		}
 
