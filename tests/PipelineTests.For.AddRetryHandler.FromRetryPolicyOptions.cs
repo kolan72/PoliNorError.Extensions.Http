@@ -213,23 +213,41 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
-		[TestCase(true, true)]
-		[TestCase(false,true)]
-		[TestCase(true, false)]
-		[TestCase(false, false)]
-		public void Should_ConfigurePolicyResultHandling_WhenSetInOptions(bool fromAction, bool isAsync)
+		[TestCase(true, true, true)]
+		[TestCase(false,true, true)]
+		[TestCase(true, false, true)]
+		[TestCase(false,false, true)]
+		[TestCase(true, true, false)]
+		[TestCase(false, true, false)]
+		[TestCase(true, false, false)]
+		[TestCase(false, false, false)]
+		public void Should_ConfigurePolicyResultHandling_WhenSetInOptions(bool fromAction, bool isAsync, bool cancelable)
 		{
 			var invoked = false;
 
 			Action<IHttpPolicyResultHandlers> configure = null;
 
-			if (isAsync)
+			if (cancelable)
 			{
-				configure = (handlers) => handlers.AddHandler((_, __) => invoked = true);
+				if (isAsync)
+				{
+					configure = (handlers) => handlers.AddHandler((_, __) => invoked = true);
+				}
+				else
+				{
+					configure = (handlers) => handlers.AddHandler(async (_, __) => { await Task.Delay(TimeSpan.FromTicks(1)); invoked = true; });
+				}
 			}
 			else
 			{
-				configure = (handlers) => handlers.AddHandler(async(_, __) => {await Task.Delay(TimeSpan.FromTicks(1)); invoked = true; });
+				if (isAsync)
+				{
+					configure = (handlers) => handlers.AddHandler((_) => invoked = true);
+				}
+				else
+				{
+					configure = (handlers) => handlers.AddHandler(async (_) => { await Task.Delay(TimeSpan.FromTicks(1)); invoked = true; });
+				}
 			}
 
 			var services = new ServiceCollection();
