@@ -18,5 +18,15 @@ namespace PoliNorError.Extensions.Http.Tests
 			// Assert
 			Assert.That(options.RetryDelay, Is.EqualTo(expectedDelay));
 		}
+
+		[Test]
+		public void Should_Set_And_Get_ProcessRetryAfterHeader()
+		{
+			var options = new RetryPolicyOptions();
+
+			options.ProcessRetryAfterHeader = true;
+
+			Assert.That(options.ProcessRetryAfterHeader, Is.True);
+		}
 	}
 }

@@ -29,6 +29,23 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
+		public void Should_Attach_NotCancelableSyncHandler_To_RetryPolicy()
+		{
+			bool invoked = false;
+			var handlers = new HttpPolicyResultHandlers();
+			var policy = new RetryPolicy(1);
+
+			handlers.AddHandler((_) => invoked = true);
+			handlers.AttachTo(policy);
+
+			using (var failedHttpResponse = new HttpResponseMessage())
+			{
+				policy.Handle(() => failedHttpResponse);
+				Assert.That(invoked, Is.True);
+			}
+		}
+
+		[Test]
 		public void Should_Attach_AsyncHandler_To_RetryPolicy_For_SyncHandling()
 		{
 			bool invoked = false;
@@ -63,6 +80,40 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
+		public void Should_Attach_NotCancelableAsyncHandler_To_RetryPolicy_For_SyncHandling()
+		{
+			bool invoked = false;
+			var handlers = new HttpPolicyResultHandlers();
+			var policy = new RetryPolicy(1);
+
+			handlers.AddHandler((_) => { invoked = true; return Task.CompletedTask; });
+			handlers.AttachTo(policy);
+
+			using (var failedHttpResponse = new HttpResponseMessage())
+			{
+				policy.Handle(() => failedHttpResponse);
+				Assert.That(invoked, Is.True);
+			}
+		}
+
+		[Test]
+		public async Task Should_Attach_NotCancelableAsyncHandler_To_RetryPolicy_For_AsyncHandling()
+		{
+			bool invoked = false;
+			var handlers = new HttpPolicyResultHandlers();
+			var policy = new RetryPolicy(1);
+
+			handlers.AddHandler(async (_) => { invoked = true; await Task.Delay(1); });
+			handlers.AttachTo(policy);
+
+			using (var failedHttpResponse = new HttpResponseMessage())
+			{
+				await policy.HandleAsync(async (__) => { await Task.Delay(1); return failedHttpResponse; });
+				Assert.That(invoked, Is.True);
+			}
+		}
+
+		[Test]
 		public void Should_ThrowArgumentNullException_When_AddingNullSyncHandler()
 		{
 			// Arrange
@@ -74,13 +125,35 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
+		public void Should_ThrowArgumentNullException_When_AddingNullNotCancelableSyncHandler()
+		{
+			// Arrange
+			var handlers = new HttpPolicyResultHandlers();
+
+			// Act & Assert
+			Assert.That(() => handlers.AddHandler((Action<PolicyResult<HttpResponseMessage>>)null),
+				Throws.ArgumentNullException.With.Property("ParamName").EqualTo("syncHandler"));
+		}
+
+		[Test]
 		public void Should_ThrowArgumentNullException_When_AddingNullAsyncHandler()
 		{
 			// Arrange
 			var handlers = new HttpPolicyResultHandlers();
 
 			// Act & Assert
-			Assert.That(() => handlers.AddHandler(null),
+			Assert.That(() => handlers.AddHandler((Func<PolicyResult<HttpResponseMessage>, CancellationToken, Task>)null),
+				Throws.ArgumentNullException.With.Property("ParamName").EqualTo("asyncHandler"));
+		}
+
+		[Test]
+		public void Should_ThrowArgumentNullException_When_AddingNullNotCancelableAsyncHandler()
+		{
+			// Arrange
+			var handlers = new HttpPolicyResultHandlers();
+
+			// Act & Assert
+			Assert.That(() => handlers.AddHandler((Func<PolicyResult<HttpResponseMessage>, Task>)null),
 				Throws.ArgumentNullException.With.Property("ParamName").EqualTo("asyncHandler"));
 		}
 	}

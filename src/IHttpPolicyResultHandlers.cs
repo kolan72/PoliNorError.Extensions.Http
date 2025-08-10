@@ -23,6 +23,16 @@ namespace PoliNorError.Extensions.Http
 		IHttpPolicyResultHandlers AddHandler(Action<PolicyResult<HttpResponseMessage>, CancellationToken> syncHandler);
 
 		/// <summary>
+		/// Adds a synchronous policy result handler.
+		/// </summary>
+		/// <param name="syncHandler">A delegate that processes the <see cref="PolicyResult{HttpResponseMessage}" /> synchronously.</param>
+		/// <returns>The current <see cref="IHttpPolicyResultHandlers"/> instance to enable fluent chaining.</returns>
+		/// <returns>
+		/// The <see cref="IHttpPolicyResultHandlers"/> instance for method chaining.
+		/// </returns>
+		IHttpPolicyResultHandlers AddHandler(Action<PolicyResult<HttpResponseMessage>> syncHandler);
+
+		/// <summary>
 		/// Adds an asynchronous policy result handler.
 		/// </summary>
 		/// <param name="asyncHandler">A delegate that processes the <see cref="PolicyResult{HttpResponseMessage}" /> asynchronously.</param>
@@ -30,18 +40,37 @@ namespace PoliNorError.Extensions.Http
 		/// The <see cref="IHttpPolicyResultHandlers"/> instance for method chaining.
 		/// </returns>
 		IHttpPolicyResultHandlers AddHandler(Func<PolicyResult<HttpResponseMessage>, CancellationToken, Task> asyncHandler);
+
+		/// <summary>
+		/// Adds an asynchronous policy result handler.
+		/// </summary>
+		/// <param name="asyncHandler">A delegate that processes the <see cref="PolicyResult{HttpResponseMessage}" /> asynchronously.</param>
+		/// <returns>
+		/// The <see cref="IHttpPolicyResultHandlers"/> instance for method chaining.
+		/// </returns>
+		IHttpPolicyResultHandlers AddHandler(Func<PolicyResult<HttpResponseMessage>, Task> asyncHandler);
 	}
 
 	internal class HttpPolicyResultHandlers : IHttpPolicyResultHandlers
 	{
-		private readonly List<HttpPolicyResultHandler> _hanlders = new List<HttpPolicyResultHandler>();
+		private readonly List<IHttpPolicyResultHandler> _hanlders = new List<IHttpPolicyResultHandler>();
 
 		public IHttpPolicyResultHandlers AddHandler(Action<PolicyResult<HttpResponseMessage>, CancellationToken> syncHandler)
 		{
 			if (syncHandler == null)
 				throw new ArgumentNullException(nameof(syncHandler));
 
-			var handler = new HttpPolicyResultHandler(syncHandler);
+			var handler = new SyncHttpPolicyResultHandler(syncHandler);
+			_hanlders.Add(handler);
+			return this;
+		}
+
+		public IHttpPolicyResultHandlers AddHandler(Action<PolicyResult<HttpResponseMessage>> syncHandler)
+		{
+			if (syncHandler == null)
+				throw new ArgumentNullException(nameof(syncHandler));
+
+			var handler = new NotCancelableSyncHttpPolicyResultHandler(syncHandler);
 			_hanlders.Add(handler);
 			return this;
 		}
@@ -51,7 +80,17 @@ namespace PoliNorError.Extensions.Http
 			if (asyncHandler == null)
 				throw new ArgumentNullException(nameof(asyncHandler));
 
-			var handler = new HttpPolicyResultHandler(asyncHandler);
+			var handler = new AsyncHttpPolicyResultHandler(asyncHandler);
+			_hanlders.Add(handler);
+			return this;
+		}
+
+		public IHttpPolicyResultHandlers AddHandler(Func<PolicyResult<HttpResponseMessage>, Task> asyncHandler)
+		{
+			if (asyncHandler == null)
+				throw new ArgumentNullException(nameof(asyncHandler));
+
+			var handler = new NotCancelableAsyncHttpPolicyResultHandler(asyncHandler);
 			_hanlders.Add(handler);
 			return this;
 		}

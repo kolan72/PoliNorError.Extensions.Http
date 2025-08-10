@@ -5,33 +5,68 @@ using System.Threading;
 
 namespace PoliNorError.Extensions.Http
 {
-	internal class HttpPolicyResultHandler
+	internal interface IHttpPolicyResultHandler
+	{
+		void AttachTo(RetryPolicy retryPolicy);
+	}
+
+	internal class SyncHttpPolicyResultHandler : IHttpPolicyResultHandler
 	{
 		private readonly Action<PolicyResult<HttpResponseMessage>, CancellationToken> _syncHandler;
-		private readonly Func<PolicyResult<HttpResponseMessage>, CancellationToken, Task> _asyncHandler;
-		private readonly bool _isAsync;
 
-		public HttpPolicyResultHandler(Action<PolicyResult<HttpResponseMessage>, CancellationToken> syncHandler)
+		public SyncHttpPolicyResultHandler(Action<PolicyResult<HttpResponseMessage>, CancellationToken> syncHandler)
 		{
 			_syncHandler = syncHandler;
 		}
 
-		public HttpPolicyResultHandler(Func<PolicyResult<HttpResponseMessage>, CancellationToken, Task> asyncHandler)
+		public void AttachTo(RetryPolicy retryPolicy)
 		{
-			_asyncHandler = asyncHandler;
-			_isAsync = true;
+			retryPolicy.AddPolicyResultHandler(_syncHandler);
+		}
+	}
+
+	internal class NotCancelableSyncHttpPolicyResultHandler : IHttpPolicyResultHandler
+	{
+		private readonly Action<PolicyResult<HttpResponseMessage>> _syncHandler;
+
+        public NotCancelableSyncHttpPolicyResultHandler(Action<PolicyResult<HttpResponseMessage>> syncHandler)
+        {
+			_syncHandler = syncHandler;
 		}
 
-		internal void AttachTo(RetryPolicy retryPolicy)
+        public void AttachTo(RetryPolicy retryPolicy)
 		{
-			if (_isAsync)
-			{
-				retryPolicy.AddPolicyResultHandler(_asyncHandler);
-			}
-			else
-			{
-				retryPolicy.AddPolicyResultHandler(_syncHandler);
-			}
+			retryPolicy.AddPolicyResultHandler(_syncHandler);
+		}
+	}
+
+	internal class AsyncHttpPolicyResultHandler : IHttpPolicyResultHandler
+	{
+		private readonly Func<PolicyResult<HttpResponseMessage>, CancellationToken, Task> _asyncHandler;
+
+		public AsyncHttpPolicyResultHandler(Func<PolicyResult<HttpResponseMessage>, CancellationToken, Task> asyncHandler)
+		{
+			_asyncHandler = asyncHandler;
+		}
+
+		public void AttachTo(RetryPolicy retryPolicy)
+		{
+			retryPolicy.AddPolicyResultHandler(_asyncHandler);
+		}
+	}
+
+	internal class NotCancelableAsyncHttpPolicyResultHandler : IHttpPolicyResultHandler
+	{
+		private readonly Func<PolicyResult<HttpResponseMessage>, Task> _asyncHandler;
+
+        public NotCancelableAsyncHttpPolicyResultHandler(Func<PolicyResult<HttpResponseMessage>, Task> asyncHandler)
+        {
+			_asyncHandler = asyncHandler;
+		}
+
+		public void AttachTo(RetryPolicy retryPolicy)
+		{
+			retryPolicy.AddPolicyResultHandler(_asyncHandler);
 		}
 	}
 }

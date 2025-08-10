@@ -45,79 +45,17 @@ namespace Retries
 			//services.AddCatClientWithExplicitlyCreatedPipeline(loggerTest)
 			//		.AddHttpMessageHandler<HandlerThatMakesTransientErrorFrom404>();
 
-
-			var provider = services.BuildServiceProvider();
-			var service = provider.GetRequiredService<IAskCatService>();
-
 			UtilsConsole.PrintHello();
 
 			Thread.Sleep(1000);
 
-			await AskCatInCyclic(service, loggerTest);
+			await using (var provider = services.BuildServiceProvider())
+			{
+				var service = provider.GetRequiredService<IAskCatService>();
+				await CatFactManager.GetCatFactOnRetry(service, loggerTest);
+			}
 
 			UtilsConsole.PrintBye();
-		}
-
-		private static async Task AskCatInCyclic(IAskCatService retryAskingCatService, ILogger loggerTest)
-		{
-			var shouldContinue = true;
-			using var cts = new CancellationTokenSource();
-
-			var seanceNumber = 0;
-
-			do
-			{
-				if (cts.IsCancellationRequested)
-				{
-					UtilsConsole.PrintCancelAsking();
-					break;
-				}
-				var answer = await retryAskingCatService.GetCatFactAsync(cts.Token);
-				if (answer.IsOk)
-				{
-					if (seanceNumber == 0)
-						Console.WriteLine("You are lucky to get a quick answer, my cat in high spirits today.");
-
-					loggerTest.LogInformation("The cat's answer is correct: {Answer}", answer.Answer);
-
-					shouldContinue = UtilsConsole.PrintContinueToAskPrompt();
-					if (shouldContinue)
-						seanceNumber++;
-				}
-				else
-				{
-					if (answer.IsCanceled == true)
-					{
-						UtilsConsole.PrintCancelAsking(true);
-						shouldContinue = false;
-					}
-					else
-					{
-						UtilsConsole.PrintNoCorrectAnswer(answer.Error);
-						if (answer.Error is HttpPolicyResultException httpException)
-						{
-							if (httpException.HasFailedResponse)
-							{
-								loggerTest.LogError("Failed status code: {StatusCode}.", httpException.FailedResponseData.StatusCode);
-							}
-
-							if (!UtilsConsole.PrintContinueToAskPrompt())
-							{
-								cts.Cancel();
-							}
-							else
-							{
-								seanceNumber++;
-							}
-						}
-						else
-						{
-							loggerTest.LogError(answer.Error, "Non-transient service exception occurs.");
-							shouldContinue = false;
-						}
-					}
-				}
-			} while (shouldContinue);
 		}
 	}
 }

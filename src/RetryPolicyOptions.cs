@@ -11,5 +11,11 @@
 		/// Gets or sets the configuration that specifies the delay between retries.
 		/// </summary>
 		public RetryDelay RetryDelay { get; set; }
+
+		/// <summary>
+		/// When true, processes Retry-After headers from HTTP responses
+		/// to determine the wait before the next retry
+		/// </summary>
+		public bool ProcessRetryAfterHeader { get; set; }
 	}
 }
