@@ -13,7 +13,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.8" />
     <PackageReference Include="PoliNorError" Version="2.24.0" />
     <PackageReference Include="PoliNorError.Extensions.Http" Version="0.3.0" />
-    <PackageReference Include="Spectre.Console" Version="0.50.0" />
+    <PackageReference Include="Spectre.Console" Version="0.51.1" />
     <PackageReference Include="System.Text.Json" Version="9.0.8" />
     <PackageReference Include="vertical-spectreconsolelogger" Version="0.10.1-dev.20240326.31" />
   </ItemGroup>
