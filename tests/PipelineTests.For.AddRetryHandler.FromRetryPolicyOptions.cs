@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PoliNorError.Extensions.Http.Tests
@@ -398,6 +399,46 @@ namespace PoliNorError.Extensions.Http.Tests
 				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
 				Assert.That(sw.Elapsed.Seconds, Is.GreaterThanOrEqualTo(1));
 				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
+			}
+		}
+
+		[Test]
+		public void Should_Add_InfiniteRetryHandler_To_PipelineStorage()
+		{
+			var storage = new FakeStorage();
+			storage.AddInfiniteRetryHandler(new RetryPolicyOptions());
+			Assert.That(storage.AddedPolicies.FirstOrDefault(), Is.TypeOf(typeof(RetryPolicy)));
+			Assert.That(((RetryPolicy)storage.AddedPolicies.FirstOrDefault()).RetryInfo.IsInfinite, Is.True);
+		}
+
+		[Test]
+		public void Should_Support_Fluent_Addition_Of_Infinite_And_LimitedRetryHandlers()
+		{
+			using (var cts = new CancellationTokenSource())
+			{
+				cts.Cancel();
+				var services = new ServiceCollection();
+
+				services.AddFakeHttpClient()
+				.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddRetryHandler(1, new RetryPolicyOptions())
+															.AddInfiniteRetryHandler(new RetryPolicyOptions())
+															//No filter works with precanceling, so we do not set an http filter.
+															.AsFinalHandler(HttpErrorFilter.None())
+															);
+
+				var serviceProvider = services.BuildServiceProvider();
+
+				using (var scope = serviceProvider.CreateScope())
+				{
+					var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
+					Assert.That(exception != null && exception.IsCanceled, Is.True);
+
+					Assert.That(exception.ThrownByFinalHandler, Is.False);
+				}
 			}
 		}
 
