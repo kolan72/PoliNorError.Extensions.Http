@@ -73,8 +73,8 @@
     <Reference Include="nunit.framework.legacy, Version=4.3.2.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
       <HintPath>..\packages\NUnit.4.3.2\lib\net462\nunit.framework.legacy.dll</HintPath>
     </Reference>
-    <Reference Include="PoliNorError, Version=2.24.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\PoliNorError.2.24.0\lib\netstandard2.0\PoliNorError.dll</HintPath>
+    <Reference Include="PoliNorError, Version=2.24.12.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\PoliNorError.2.24.12\lib\netstandard2.0\PoliNorError.dll</HintPath>
     </Reference>
     <Reference Include="RichardSzalay.MockHttp, Version=7.0.0.0, Culture=neutral, PublicKeyToken=7059d3aca2a9eddc, processorArchitecture=MSIL">
       <HintPath>..\packages\RichardSzalay.MockHttp.7.0.0\lib\netstandard2.0\RichardSzalay.MockHttp.dll</HintPath>
