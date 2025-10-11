@@ -18,6 +18,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 ## 🔑 Key Concepts
 
+- 🟦 **Resiliency pipeline**  - the pipeline of `DelegatingHandler`, using policies from the `PoliNorError` library.
 - ➡ **OuterHandler** is the **first** handler in the pipeline (closest to the request initiator).
 - ⬅ **InnerHandler** is the **next** handler in the pipeline (closer to the final destination).
 - 🔵 **FinalHandler** is the innermost handler in the pipeline.
