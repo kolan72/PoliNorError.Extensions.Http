@@ -403,6 +403,37 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
+		public void Should_InfiniteRetryHandler_Be_Canceled_When_Canceled_In_ErrorProcessor()
+		{
+			using (var cts = new CancellationTokenSource())
+			{
+				void configure(IBulkErrorProcessor bp) => bp.WithErrorProcessorOf((_) => cts.Cancel());
+
+				var services = new ServiceCollection();
+
+				var options = new RetryPolicyOptions
+				{
+					ConfigureErrorProcessing = configure
+				};
+
+				services.AddFakeHttpClient()
+					.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddInfiniteRetryHandler(options)
+														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+				using (var serviceProvider = services.BuildServiceProvider())
+				using (var scope = serviceProvider.CreateScope())
+				{
+					var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
+					Assert.That(exception.IsCanceled, Is.True);
+				}
+			}
+		}
+
+		[Test]
 		public void Should_Add_InfiniteRetryHandler_To_PipelineStorage()
 		{
 			var storage = new FakeStorage();
