@@ -95,11 +95,11 @@ namespace PoliNorError.Extensions.Http
 			return this;
 		}
 
-		internal void AttachTo(RetryPolicy retryPolicy)
+		internal void AttachTo(Policy policy)
 		{
 			foreach (var handler in _hanlders)
 			{
-				handler.AttachTo(retryPolicy);
+				handler.AttachTo(policy);
 			}
 		}
 	}
