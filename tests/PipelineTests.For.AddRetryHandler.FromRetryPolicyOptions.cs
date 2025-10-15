@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -403,7 +404,9 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
-		public void Should_InfiniteRetryHandler_Be_Canceled_When_Canceled_In_ErrorProcessor()
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_InfiniteRetryHandler_Be_Canceled_When_Canceled_In_ErrorProcessor(bool fromAction)
 		{
 			using (var cts = new CancellationTokenSource())
 			{
@@ -411,15 +414,25 @@ namespace PoliNorError.Extensions.Http.Tests
 
 				var services = new ServiceCollection();
 
-				var options = new RetryPolicyOptions
+				if (fromAction)
 				{
-					ConfigureErrorProcessing = configure
-				};
+					services.AddFakeHttpClient()
+						.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddInfiniteRetryHandler(opt => opt.ConfigureErrorProcessing = configure)
+															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+				}
+				else
+				{
+					var options = new RetryPolicyOptions
+					{
+						ConfigureErrorProcessing = configure
+					};
 
-				services.AddFakeHttpClient()
-					.WithResiliencePipeline((empyConfig) => empyConfig
-														.AddInfiniteRetryHandler(options)
-														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+					services.AddFakeHttpClient()
+						.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddInfiniteRetryHandler(options)
+															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+				}
 
 				using (var serviceProvider = services.BuildServiceProvider())
 				using (var scope = serviceProvider.CreateScope())
@@ -434,10 +447,19 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
-		public void Should_Add_InfiniteRetryHandler_To_PipelineStorage()
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_Add_InfiniteRetryHandler_To_PipelineStorage(bool fromAction)
 		{
 			var storage = new FakeStorage();
-			storage.AddInfiniteRetryHandler(new RetryPolicyOptions());
+			if (fromAction)
+			{
+				storage.AddInfiniteRetryHandler((rp) => rp.ConfigurePolicyResultHandling = (handlers) => handlers.AddHandler((_) => {}));
+			}
+			else
+			{
+				storage.AddInfiniteRetryHandler(new RetryPolicyOptions());
+			}
 			Assert.That(storage.AddedPolicies.FirstOrDefault(), Is.TypeOf(typeof(RetryPolicy)));
 			Assert.That(((RetryPolicy)storage.AddedPolicies.FirstOrDefault()).RetryInfo.IsInfinite, Is.True);
 		}
