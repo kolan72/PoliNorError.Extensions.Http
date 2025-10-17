@@ -105,6 +105,62 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
+		[TestCase(DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)]
+		[TestCase(DelegatingHandlerThatThrowsNotHttpException.ErrorType.Argument)]
+		public void Should_InnerErrorProcessing_BeConfigured_WhenSetInOptions(DelegatingHandlerThatThrowsNotHttpException.ErrorType errorType)
+		{
+			int i = 0;
+			void configure(BulkErrorProcessor bp) => bp.WithInnerErrorProcessorOf<InvalidOperationException>((_) => i++);
+
+			var options = new RetryPolicyOptions
+			{
+				ConfigureErrorProcessing = configure
+			};
+
+			PolicyWithNotFilterableError testPolicy;
+
+			if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
+			{
+				testPolicy = new PolicyWithNotFilterableError(() => throw new InvalidOperationException("Test"), typeof(InvalidOperationException));
+			}
+			else
+			{
+				testPolicy = new PolicyWithNotFilterableError(() => throw new ArgumentException("Test"), typeof(ArgumentException));
+			}
+
+			var services = new ServiceCollection();
+
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddRetryHandler(3, options)
+														//Generate InvalidOperationException here
+														.AddPolicyHandler(testPolicy)
+														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()))
+				;
+
+			using (var serviceProvider = services.BuildServiceProvider())
+			using (var scope = serviceProvider.CreateScope())
+			{
+				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+				//By design — this happens because testPolicy generates an exception that doesn’t satisfy the filter.
+				Assert.That(exception.IsErrorExpected, Is.False);
+				if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
+				{
+					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
+					Assert.That(i, Is.EqualTo(3));
+				}
+				else
+				{
+					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(ArgumentException)));
+					Assert.That(i, Is.EqualTo(0));
+				}
+			}
+		}
+
+		[Test]
 		[TestCase(true)]
 		[TestCase(false)]
 		public void Should_Outer_PolicyHandler_Be_Configured_By_ConfigureErrorFilter(bool shouldMatch)
