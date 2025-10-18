@@ -18,6 +18,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 ## 🔑 Key Concepts
 
+- 🟦 **Resiliency pipeline**  - the pipeline of `DelegatingHandler`, using policies from the `PoliNorError` library.
 - ➡ **OuterHandler** is the **first** handler in the pipeline (closest to the request initiator).
 - ⬅ **InnerHandler** is the **next** handler in the pipeline (closer to the final destination).
 - 🔵 **FinalHandler** is the innermost handler in the pipeline.
@@ -211,8 +212,9 @@ You can also configure `RetryPolicy` details inline using the `AddRetryHandler` 
 Public properties of the `HttpPolicyResultException`:
 
 - `InnerException` 
-	- if the response status code matches the handling filter status code, it will be the special `FailedHttpResponseException`;  
-	- otherwise, an exception is thrown by a handler, either inside or outside the pipeline.
+	- If the response status code matches the handling filter’s status code, it will be a special `FailedHttpResponseException`.  
+	- If no handlers inside or outside the resiliency pipeline throw an exception, and the `HttpClient`’s primary handler throws an `HttpRequestException`, the `InnerException` will be that `HttpRequestException`.
+	- Otherwise, the exception originates from one of the handlers, either inside or outside the pipeline.
 - `FailedResponseData` - not null if the status code part of the handling filter matches the response status code.
 - `HasFailedResponse` - true if `FailedResponseData` is not null.
 - `PolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result that is produced by a policy that belongs to the `DelegatingHandler` that throws this exception.  

@@ -1,3 +1,19 @@
+## 0.5.0
+
+- Introduced the `RetryPolicyOptions.ProcessRetryAfterHeader` property, which allows handling of the `Retry-After` header.
+- Add support for configuring non-cancelable policy result handlers in `PolicyOptions`.
+- Refactor handler addition in `HttpPolicyResultHandlers`.
+- Refactor `AddRetryHandler` overloads to construct `RetryPolicy` using `RetryPolicyOptions`.
+- Update lib and tests to PoliNorError 2.24.0.
+- Update Microsoft nuget packages.
+- Upgrade Samples to PoliNorError v2.24.0.
+- Update Microsoft NuGet packages for Samples.
+- Add the RetryFromOptions project to Samples.sln to see an example of a retry handler built from options.
+- Add tests for the `RetryPolicyOptions.ConfigureErrorFilter` method related to the outer handler.
+- Added tests for the asynchronous policy result handler in `RetryPolicyOptions`.
+- Replace synchronous disposal with `await using` in the Samples projects.
+
+
 ## 0.3.0
 
 - Update lib and tests to PoliNorError 2.23.0.
