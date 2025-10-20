@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <SuppressTfmSupportBuildWarnings>true</SuppressTfmSupportBuildWarnings>
   </PropertyGroup>
 
@@ -11,9 +11,9 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.8" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.8" />
-    <PackageReference Include="PoliNorError" Version="2.24.0" />
-    <PackageReference Include="PoliNorError.Extensions.Http" Version="0.3.0" />
-    <PackageReference Include="Spectre.Console" Version="0.50.0" />
+    <PackageReference Include="PoliNorError" Version="2.24.12" />
+    <PackageReference Include="PoliNorError.Extensions.Http" Version="0.5.0" />
+    <PackageReference Include="Spectre.Console" Version="0.51.1" />
     <PackageReference Include="System.Text.Json" Version="9.0.8" />
     <PackageReference Include="vertical-spectreconsolelogger" Version="0.10.1-dev.20240326.31" />
   </ItemGroup>

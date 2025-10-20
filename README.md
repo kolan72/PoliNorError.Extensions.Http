@@ -8,7 +8,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 ## ⚡ Key Features
 
-- Provides the ability to create a pipeline to handle typical transient HTTP failures (including the `HttpRequestException` exception).  
+- Provides the ability to create a resiliency pipeline to handle typical transient HTTP failures (including the `HttpRequestException` exception).  
 - Flexible transient failure filter for the final `DelegatingHandler` in the pipeline for the response.  
 - Additionally, custom failure status codes or categories can be added to the final handler filter.  
 - Other exception types (besides `HttpRequestException`) can also be included in the final handler filter.  

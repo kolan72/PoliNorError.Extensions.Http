@@ -20,7 +20,7 @@ namespace PoliNorError.Extensions.Http
 		/// <summary>
 		/// Gets or sets the action that configures error processing by adding an <see cref=“IErrorProcessor”/> to a policy.
 		/// </summary>
-		public Action<IBulkErrorProcessor> ConfigureErrorProcessing { get; set; }
+		public Action<BulkErrorProcessor> ConfigureErrorProcessing { get; set; }
 
 		/// <summary>
 		/// Gets or sets the function that configures the error filter for a policy.

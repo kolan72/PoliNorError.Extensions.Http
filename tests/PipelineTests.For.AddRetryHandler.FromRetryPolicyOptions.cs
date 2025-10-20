@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PoliNorError.Extensions.Http.Tests
@@ -99,6 +101,62 @@ namespace PoliNorError.Extensions.Http.Tests
 				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
 				Assert.That(exception.IsErrorExpected, Is.True);
 				Assert.That(i, Is.EqualTo(3));
+			}
+		}
+
+		[Test]
+		[TestCase(DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)]
+		[TestCase(DelegatingHandlerThatThrowsNotHttpException.ErrorType.Argument)]
+		public void Should_InnerErrorProcessing_BeConfigured_WhenSetInOptions(DelegatingHandlerThatThrowsNotHttpException.ErrorType errorType)
+		{
+			int i = 0;
+			void configure(BulkErrorProcessor bp) => bp.WithInnerErrorProcessorOf<InvalidOperationException>((_) => i++);
+
+			var options = new RetryPolicyOptions
+			{
+				ConfigureErrorProcessing = configure
+			};
+
+			PolicyWithNotFilterableError testPolicy;
+
+			if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
+			{
+				testPolicy = new PolicyWithNotFilterableError(() => throw new InvalidOperationException("Test"), typeof(InvalidOperationException));
+			}
+			else
+			{
+				testPolicy = new PolicyWithNotFilterableError(() => throw new ArgumentException("Test"), typeof(ArgumentException));
+			}
+
+			var services = new ServiceCollection();
+
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddRetryHandler(3, options)
+														//Generate InvalidOperationException here
+														.AddPolicyHandler(testPolicy)
+														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()))
+				;
+
+			using (var serviceProvider = services.BuildServiceProvider())
+			using (var scope = serviceProvider.CreateScope())
+			{
+				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+				//By design — this happens because testPolicy generates an exception that doesn’t satisfy the filter.
+				Assert.That(exception.IsErrorExpected, Is.False);
+				if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
+				{
+					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
+					Assert.That(i, Is.EqualTo(3));
+				}
+				else
+				{
+					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(ArgumentException)));
+					Assert.That(i, Is.EqualTo(0));
+				}
 			}
 		}
 
@@ -398,6 +456,98 @@ namespace PoliNorError.Extensions.Http.Tests
 				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
 				Assert.That(sw.Elapsed.Seconds, Is.GreaterThanOrEqualTo(1));
 				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
+			}
+		}
+
+		[Test]
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_InfiniteRetryHandler_Be_Canceled_When_Canceled_In_ErrorProcessor(bool fromAction)
+		{
+			using (var cts = new CancellationTokenSource())
+			{
+				void configure(IBulkErrorProcessor bp) => bp.WithErrorProcessorOf((_) => cts.Cancel());
+
+				var services = new ServiceCollection();
+
+				if (fromAction)
+				{
+					services.AddFakeHttpClient()
+						.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddInfiniteRetryHandler(opt => opt.ConfigureErrorProcessing = configure)
+															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+				}
+				else
+				{
+					var options = new RetryPolicyOptions
+					{
+						ConfigureErrorProcessing = configure
+					};
+
+					services.AddFakeHttpClient()
+						.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddInfiniteRetryHandler(options)
+															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+				}
+
+				using (var serviceProvider = services.BuildServiceProvider())
+				using (var scope = serviceProvider.CreateScope())
+				{
+					var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
+					Assert.That(exception.IsCanceled, Is.True);
+				}
+			}
+		}
+
+		[Test]
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_Add_InfiniteRetryHandler_To_PipelineStorage(bool fromAction)
+		{
+			var storage = new FakeStorage();
+			if (fromAction)
+			{
+				storage.AddInfiniteRetryHandler((rp) => rp.ConfigurePolicyResultHandling = (handlers) => handlers.AddHandler((_) => {}));
+			}
+			else
+			{
+				storage.AddInfiniteRetryHandler(new RetryPolicyOptions());
+			}
+			Assert.That(storage.AddedPolicies.FirstOrDefault(), Is.TypeOf(typeof(RetryPolicy)));
+			Assert.That(((RetryPolicy)storage.AddedPolicies.FirstOrDefault()).RetryInfo.IsInfinite, Is.True);
+		}
+
+		[Test]
+		public void Should_Support_Fluent_Addition_Of_Infinite_And_LimitedRetryHandlers()
+		{
+			using (var cts = new CancellationTokenSource())
+			{
+				cts.Cancel();
+				var services = new ServiceCollection();
+
+				services.AddFakeHttpClient()
+				.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddRetryHandler(1, new RetryPolicyOptions())
+															.AddInfiniteRetryHandler(new RetryPolicyOptions())
+															//No filter works with precanceling, so we do not set an http filter.
+															.AsFinalHandler(HttpErrorFilter.None())
+															);
+
+				var serviceProvider = services.BuildServiceProvider();
+
+				using (var scope = serviceProvider.CreateScope())
+				{
+					var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
+					Assert.That(exception != null && exception.IsCanceled, Is.True);
+
+					Assert.That(exception.ThrownByFinalHandler, Is.False);
+				}
 			}
 		}
 

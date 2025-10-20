@@ -2,12 +2,13 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
+using PoliNorError.Extensions.PolicyResultHandling;
 
 namespace PoliNorError.Extensions.Http
 {
 	internal interface IHttpPolicyResultHandler
 	{
-		void AttachTo(RetryPolicy retryPolicy);
+		void AttachTo(Policy policy);
 	}
 
 	internal class SyncHttpPolicyResultHandler : IHttpPolicyResultHandler
@@ -19,9 +20,9 @@ namespace PoliNorError.Extensions.Http
 			_syncHandler = syncHandler;
 		}
 
-		public void AttachTo(RetryPolicy retryPolicy)
+		public void AttachTo(Policy policy)
 		{
-			retryPolicy.AddPolicyResultHandler(_syncHandler);
+			policy.AddHandlerForPolicyResult(_syncHandler);
 		}
 	}
 
@@ -34,9 +35,9 @@ namespace PoliNorError.Extensions.Http
 			_syncHandler = syncHandler;
 		}
 
-        public void AttachTo(RetryPolicy retryPolicy)
+        public void AttachTo(Policy policy)
 		{
-			retryPolicy.AddPolicyResultHandler(_syncHandler);
+			policy.AddHandlerForPolicyResult(_syncHandler);
 		}
 	}
 
@@ -49,9 +50,9 @@ namespace PoliNorError.Extensions.Http
 			_asyncHandler = asyncHandler;
 		}
 
-		public void AttachTo(RetryPolicy retryPolicy)
+		public void AttachTo(Policy policy)
 		{
-			retryPolicy.AddPolicyResultHandler(_asyncHandler);
+			policy.AddHandlerForPolicyResult(_asyncHandler);
 		}
 	}
 
@@ -64,9 +65,9 @@ namespace PoliNorError.Extensions.Http
 			_asyncHandler = asyncHandler;
 		}
 
-		public void AttachTo(RetryPolicy retryPolicy)
+		public void AttachTo(Policy policy)
 		{
-			retryPolicy.AddPolicyResultHandler(_asyncHandler);
+			policy.AddHandlerForPolicyResult(_asyncHandler);
 		}
 	}
 }

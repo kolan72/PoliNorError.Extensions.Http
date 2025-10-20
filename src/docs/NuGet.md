@@ -1,8 +1,8 @@
 The library provides an outgoing request resiliency pipeline for `HttpClient`, using policies from the [PoliNorError](https://github.com/kolan72/PoliNorError) library.
 
-## Key Features
+## ⚡ Key Features
 
-- Provides the ability to create a pipeline to handle typical transient HTTP failures (including the `HttpRequestException` exception).  
+- Provides the ability to create a resiliency pipeline to handle typical transient HTTP failures (including the `HttpRequestException` exception).  
 - Flexible transient failure filter for the final `DelegatingHandler` in the pipeline for the response.  
 - Additionally, custom failure status codes or categories can be added to the final handler filter.  
 - Other exception types (besides `HttpRequestException`) can also be included in the final handler filter.  
@@ -10,7 +10,15 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 - Both typed and named `HttpClient`, as well as `IHttpClientFactory`, can be used.  
 - Targets .NET Standard 2.0.  
 
-## Usage
+## 🔑 Key Concepts
+
+- 🟦 **Resiliency pipeline**  - the pipeline of `DelegatingHandler`, using policies from the `PoliNorError` library.
+- ➡ **OuterHandler** is the **first** handler in the pipeline (closest to the request initiator).
+- ⬅ **InnerHandler** is the **next** handler in the pipeline (closer to the final destination).
+- 🔵 **FinalHandler** is the innermost handler in the pipeline.
+- ❌ **Transient HTTP errors** are temporary failures that occur when making HTTP requests (HTTP 5xx, HTTP 408, HTTP 429 and `HttpRequestException`). 
+
+## 🚀 Usage
 
 1. Configure  typed or named `HttpClient`:
 ```csharp
@@ -120,3 +128,21 @@ catch (Exception ex)
 }
 ```
 
+## 📜 `HttpPolicyResultException` properties
+
+Public properties of the `HttpPolicyResultException`:
+
+- `InnerException` 
+	- If the response status code matches the handling filter’s status code, it will be a special `FailedHttpResponseException`.  
+	- If no handlers inside or outside the resiliency pipeline throw an exception, and the `HttpClient`’s primary handler throws an `HttpRequestException`, the `InnerException` will be that `HttpRequestException`.
+	- Otherwise, the exception originates from one of the handlers, either inside or outside the pipeline.
+- `FailedResponseData` - not null if the status code part of the handling filter matches the response status code.
+- `HasFailedResponse` - true if `FailedResponseData` is not null.
+- `PolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result that is produced by a policy that belongs to the `DelegatingHandler` that throws this exception.  
+- `InnermostPolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result produced by a policy of the final handler or by a handler in the pipeline that throws its own exception. 
+- `IsErrorExpected` - indicates whether the filter for the original exception was satisfied.
+- `IsCanceled` - indicates whether the execution was canceled.
+
+##  Samples
+
+See the samples folder for concrete examples.
