@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using System;
+using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace PoliNorError.Extensions.Http.Tests
 {
@@ -66,6 +68,28 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
 			Assert.That(i, Is.EqualTo(3));
 		}
+
+		[Test]
+		public async Task Should_Handle_Fallback_Correctly_When_Single_AddFallbackHandler_Is_Used()
+		{
+			var epInvoked = false;
+
+			var criteria = HttpErrorFilter.HandleHttpRequestException();
+
+			var fallbackPolicy = new FallbackPolicy()
+							.WithFallbackFunc((_) => new HttpResponseMessage() { StatusCode = HttpStatusCode.OK })
+							.WithErrorProcessorOf((_) => epInvoked = true);
+
+			IPipelineBuilder pipelineFactory(IEmptyPipelineBuilder empyConfig) =>
+																		empyConfig
+																		.AddFallbackHandler(fallbackPolicy)
+																		.AsFinalHandler(criteria);
+
+			var invoker = new HttpClientWithPipelineInvoker();
+			var statusCode = await invoker.InvokeHttpClientWithStatusCode(pipelineFactory);
+			Assert.That(statusCode, Is.EqualTo(HttpStatusCode.OK));
+			Assert.That(epInvoked, Is.True);
+		}
 	}
 
 	internal class HttpClientWithPipelineInvoker
@@ -111,6 +135,27 @@ namespace PoliNorError.Extensions.Http.Tests
 				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
 				return Assert.ThrowsAsync<TFailure>(async () => await sut.SendAsync(request));
+			}
+		}
+
+		public async Task<HttpStatusCode> InvokeHttpClientWithStatusCode(Func<IEmptyPipelineBuilder, IPipelineBuilder> pipelineFactory)
+		{
+			var services = new ServiceCollection();
+			services
+				.AddFakeHttpClient()
+				.WithResiliencePipeline(pipelineFactory);
+
+			return await SendAndGetStatusCode(services);
+		}
+
+		private async Task<HttpStatusCode> SendAndGetStatusCode(IServiceCollection services)
+		{
+			using (var serviceProvider = services.BuildServiceProvider())
+			using (var scope = serviceProvider.CreateScope())
+			{
+				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+				return (await sut.SendAsync(request)).StatusCode;
 			}
 		}
 	}
