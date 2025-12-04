@@ -90,6 +90,31 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(statusCode, Is.EqualTo(HttpStatusCode.OK));
 			Assert.That(epInvoked, Is.True);
 		}
+
+		[Test]
+		public async Task Should_Handle_Fallback_Correctly_When_Single_AddFallbackHandler_FromFactoryWithContext_Is_Used()
+		{
+			var epInvoked = false;
+
+			var criteria = HttpErrorFilter.HandleHttpRequestException();
+
+			IPipelineBuilder pipelineFactory(IEmptyPipelineBuilder empyConfig) =>
+																		empyConfig
+																		.AddFallbackHandler(
+																			(IServiceProvider sp) =>
+																			{
+																				var fallbackProvider = sp.GetRequiredService<FallbackFuncsProvider>();
+																				return
+																					fallbackProvider
+																					.ToFallbackPolicy()
+																					.WithErrorProcessorOf((_) => epInvoked = true);
+																			})
+																		.AsFinalHandler(criteria);
+			var invoker = new HttpClientWithPipelineInvoker();
+			var statusCode = await invoker.InvokeHttpClientWithStatusCodeWithFallbackProvider(pipelineFactory);
+			Assert.That(statusCode, Is.EqualTo(HttpStatusCode.OK));
+			Assert.That(epInvoked, Is.True);
+		}
 	}
 
 	internal class HttpClientWithPipelineInvoker
@@ -141,6 +166,23 @@ namespace PoliNorError.Extensions.Http.Tests
 		public async Task<HttpStatusCode> InvokeHttpClientWithStatusCode(Func<IEmptyPipelineBuilder, IPipelineBuilder> pipelineFactory)
 		{
 			var services = new ServiceCollection();
+			services
+				.AddFakeHttpClient()
+				.WithResiliencePipeline(pipelineFactory);
+
+			return await SendAndGetStatusCode(services);
+		}
+
+		public async Task<HttpStatusCode> InvokeHttpClientWithStatusCodeWithFallbackProvider(Func<IEmptyPipelineBuilder, IPipelineBuilder> pipelineFactory)
+		{
+			var fallbackProvider = FallbackFuncsProvider
+									.Create()
+									.AddOrReplaceFallbackFunc
+									((_) => new HttpResponseMessage() { StatusCode = HttpStatusCode.OK });
+
+			var services = new ServiceCollection();
+			services.AddScoped((_) => fallbackProvider);
+
 			services
 				.AddFakeHttpClient()
 				.WithResiliencePipeline(pipelineFactory);
