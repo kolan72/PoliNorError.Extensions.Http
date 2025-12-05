@@ -115,6 +115,7 @@
     <Compile Include="HttpPolicyResultHandlerTests.cs" />
     <Compile Include="HttpResponseMessageToHandleByPolicyAdapterTests.cs" />
     <Compile Include="ObjectsToTest.cs" />
+    <Compile Include="PipelineTests.For.AddFallbackHandler.cs" />
     <Compile Include="PipelineTests.For.AddRetryHandler.cs" />
     <Compile Include="PipelineTests.For.AddRetryHandler.FromRetryPolicyOptions.cs" />
     <Compile Include="PipelineTests.For.HandleAllNonSuccessStatusCodes.Filter.cs" />
