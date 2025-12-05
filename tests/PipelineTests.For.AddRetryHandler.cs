@@ -92,7 +92,7 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
-		public async Task Should_Handle_Fallback_Correctly_When_Single_AddFallbackHandler_FromFactoryWithContext_Is_Used()
+		public async Task Should_Handle_Fallback_Correctly_When_Single_AddFallbackHandler_FromFactory_Is_Used()
 		{
 			var epInvoked = false;
 
@@ -114,6 +114,31 @@ namespace PoliNorError.Extensions.Http.Tests
 			var statusCode = await invoker.InvokeHttpClientWithStatusCodeWithFallbackProvider(pipelineFactory);
 			Assert.That(statusCode, Is.EqualTo(HttpStatusCode.OK));
 			Assert.That(epInvoked, Is.True);
+		}
+
+		[Test]
+		public async Task Should_Handle_Fallback_Correctly_When_Single_AddFallbackHandler_FromFactoryWithContext_Is_Used()
+		{
+			int contextValue = 1;
+			int contextInProcessor = 0;
+			var criteria = HttpErrorFilter.HandleHttpRequestException();
+
+			IPipelineBuilder<int> pipelineFactory(IEmptyPipelineBuilder<int> empyConfig) =>
+																		empyConfig
+																		.AddFallbackHandler(
+																			(context, sp) =>
+																			{
+																				var fallbackProvider = sp.GetRequiredService<FallbackFuncsProvider>();
+																				return
+																					fallbackProvider
+																					.ToFallbackPolicy()
+																					.WithErrorProcessorOf((_) => contextInProcessor = context);
+																			})
+																		.AsFinalHandler(criteria);
+			var invoker = new HttpClientWithPipelineInvoker();
+			var statusCode = await invoker.InvokeHttpClientWithStatusCodeWithFallbackProvider(pipelineFactory, contextValue);
+			Assert.That(statusCode, Is.EqualTo(HttpStatusCode.OK));
+			Assert.That(contextInProcessor, Is.EqualTo(1));
 		}
 	}
 
@@ -186,6 +211,23 @@ namespace PoliNorError.Extensions.Http.Tests
 			services
 				.AddFakeHttpClient()
 				.WithResiliencePipeline(pipelineFactory);
+
+			return await SendAndGetStatusCode(services);
+		}
+
+		public async Task<HttpStatusCode> InvokeHttpClientWithStatusCodeWithFallbackProvider<TContext>(Func<IEmptyPipelineBuilder<TContext>, IPipelineBuilder<TContext>> pipelineFactory, TContext context)
+		{
+			var fallbackProvider = FallbackFuncsProvider
+									.Create()
+									.AddOrReplaceFallbackFunc
+									((_) => new HttpResponseMessage() { StatusCode = HttpStatusCode.OK });
+
+			var services = new ServiceCollection();
+			services.AddScoped((_) => fallbackProvider);
+
+			services
+				.AddFakeHttpClient()
+				.WithResiliencePipeline(pipelineFactory, context);
 
 			return await SendAndGetStatusCode(services);
 		}
