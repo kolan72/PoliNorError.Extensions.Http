@@ -11,7 +11,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.2" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.2" />
-    <PackageReference Include="PoliNorError" Version="2.24.12" />
+    <PackageReference Include="PoliNorError" Version="2.24.20" />
     <PackageReference Include="PoliNorError.Extensions.Http" Version="0.8.0" />
     <PackageReference Include="Spectre.Console" Version="0.54.0" />
     <PackageReference Include="System.Text.Json" Version="10.0.2" />
