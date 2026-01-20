@@ -31,7 +31,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
   * HTTP response details
   * Policy execution results
 
-* **Control exception flow between handlers using IncludeException<TException>**
+* **Control exception flow between handlers using `IncludeException<TException>`**
 
 * **Deep PoliNorError integration**
   Use PoliNorError's fluent APIs for:
