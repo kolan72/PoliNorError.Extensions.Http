@@ -2,13 +2,44 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 ## ⚡ Key Features
 
-- Provides the ability to create a resiliency pipeline to handle typical transient HTTP failures (including the `HttpRequestException` exception).  
-- Flexible transient failure filter for the final `DelegatingHandler` in the pipeline for the response.  
-- Additionally, custom failure status codes or categories can be added to the final handler filter.  
-- Other exception types (besides `HttpRequestException`) can also be included in the final handler filter.  
-- Inclusion in the outer handler filter of any `Exception` type thrown by the inner handler is also supported.  
-- Both typed and named `HttpClient`, as well as `IHttpClientFactory`, can be used.  
-- Targets .NET Standard 2.0.  
+* **Explicit resiliency pipeline** based on `DelegatingHandler`s
+
+* **Flexible policy creation**
+
+  * Inline policies
+  * Policies resolved from `IServiceProvider`
+  * Context-aware policy creation
+
+* **Powerful final-handler failure filtering**
+  Precisely control *which* HTTP responses and exceptions should be treated as failures:
+
+  * Transient HTTP errors (5xx, 408, 429)
+  * `HttpRequestException` and any other exception types
+  * Custom status codes or status code categories
+
+* **Full exception transparency**
+  Failures are surfaced via a single, rich exception:
+  `HttpPolicyResultException`, preserving:
+
+  * The original exception
+  * HTTP response details
+  * Policy execution results
+
+* **Control exception flow between handlers using IncludeException<TException>**
+
+* **Deep PoliNorError integration**
+  Use PoliNorError's fluent APIs for:
+
+  * Retry, fallback, and custom policies
+  * Exception filtering and processing
+  * Policy result inspection and logging
+
+* **Works with**
+
+  * Typed and named `HttpClient`
+  * `IHttpClientFactory`
+
+* **.NET Standard 2.0 compatible**  
 
 ## 🔑 Key Concepts
 
