@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using PoliNorError.Extensions.Http;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,6 +47,28 @@ namespace Shared
 						UtilsConsole.PrintNoCorrectAnswer(answer.Error);
 						if (answer.Error is HttpPolicyResultException httpException)
 						{
+							loggerTest.LogError("Outer Policy {PolicyName} exceptions count {ErrorsCount}:"
+								, httpException.PolicyResult.PolicyName
+								, httpException.PolicyResult.Errors.Count());
+
+							//  Check all exceptions that occurred during retries in the outer handler
+							foreach (var error in httpException.PolicyResult.Errors)
+							{
+								var info = new { Type = error.GetType().Name, error.Message };
+								loggerTest.LogError(error, "Outer policy exception {@ErrorInfo}", info);
+							}
+
+							// Identify which policy failed at the deepest level
+							var rootResult = httpException.InnermostPolicyResult;
+							loggerTest.LogError("Final Policy {PolicyName} exceptions count {ErrorsCount}:", rootResult.PolicyName, rootResult.Errors.Count());
+
+							// Check all exceptions that occurred during retries in the innermost handler
+							foreach (var error in rootResult.Errors)
+							{
+								var info = new {Type = error.GetType().Name, error.Message };
+								loggerTest.LogError(error, "Final policy exception {@ErrorInfo}", info);
+							}
+
 							if (httpException.HasFailedResponse)
 							{
 								loggerTest.LogError("Failed status code: {StatusCode}.", httpException.FailedResponseData.StatusCode);
