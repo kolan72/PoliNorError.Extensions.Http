@@ -255,9 +255,9 @@ Public properties of the `HttpPolicyResultException`:
 
 ## ❓ Why PoliNorError.Extensions.Http?
 
-* **Declarative pipeline builder for `HttpClient` via `WithResiliencePipeline`.**
+* **Declarative pipeline builder for `HttpClient` via `WithResiliencePipeline`**
 
-* **First-class support for typed and named `HttpClient`.
+* **First-class support for typed and named `HttpClient`**
 
 * **You decide what a failure is**
   - Filter transient HTTP errors in the flexible final handler and control exception flow between handlers.
@@ -265,11 +265,10 @@ Public properties of the `HttpPolicyResultException`:
 * **One clear failure signal**
   - All handled failures surface as a single, information-rich `HttpPolicyResultException`.
 
-* **Helpers to add handlers with rich configuration (`AddRetryHandler`, `AddFallbackHandler`).
+* **Helpers to add handlers with rich configuration (`AddRetryHandler`, `AddFallbackHandler`)**
 
 * **First-class PoliNorError integration**
   - Advanced error processing, contextual logging, and policy result inspection.
-
 
 ## 🐈 Samples [![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro)
 
