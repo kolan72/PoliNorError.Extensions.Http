@@ -159,6 +159,74 @@ catch (Exception ex)
 }
 ```
 
+## 🔁 Adding Handlers Based on `RetryPolicy` Using the `AddRetryHandler` Extension Methods.
+
+The `AddRetryHandler` extension methods provide a fluent way to attach a `RetryPolicy` to an HTTP message handler pipeline. 
+One of these methods allows adding a handler via `RetryPolicyOptions` and is responsible for setting up `RetryPolicy` details, including:
+- Error processing,
+- Policy result handling,
+- Error filters,
+- Policy naming,
+- Delay between retries,
+- And ultimately registering the policy with `AddPolicyHandler`.
+
+### Example: Retry with logging, filtering, and delay:
+```csharp
+var retryOptions = new RetryPolicyOptions()
+{
+	PolicyName = "MyRetryPolicy",
+
+	ConfigureErrorProcessing = (bp) =>
+		bp.WithErrorProcessorOf(
+			(Exception ex, ProcessingErrorInfo pi) =>
+				loggerTest.LogError(
+					ex, 
+					"Exception on attempt { Attempt }:", 
+					pi.GetRetryCount() + 1)),
+
+	ConfigureErrorFilter = (f) => f.ExcludeError<SomeException>(),
+
+	ConfigurePolicyResultHandling = (handlers) => handlers.AddHandler(
+			(pr, _) =>
+			{
+				if (pr.IsFailed)
+				{
+					loggerTest.LogWarning(
+						"{Errors} exceptions were thrown during handling by {PolicyName}.",
+						pr.Errors.Count(),
+						pr.PolicyName);
+				}
+			}
+		),
+		
+	RetryDelay = ConstantRetryDelay.Create(TimeSpan.FromSeconds(1))	
+};
+```
+This example configures `RetryPolicyOptions` with:
+
+- A policy name ("MyRetryPolicy"),
+- An error processor (logs exceptions with attempt numbers),
+- An error filter (excludes `SomeException`),
+- A result handler (logs warnings about exception counts),
+- A 1-second constant delay between retries.
+
+Attach a retry handler to the pipeline using these options:
+```csharp
+services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
+	{
+			...
+	})
+	.WithResiliencePipeline((pb) => 
+		pb
+		...
+		//Maximum number of retries: 3  
+		.AddRetryHandler(3, retryOptions)
+		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
+		...
+	)
+```
+You can also configure `RetryPolicy` details inline using the `AddRetryHandler` overload that accepts an `Action<RetryPolicyOptions>`.
+
 ## 📜 `HttpPolicyResultException` properties
 
 Public properties of the `HttpPolicyResultException`:
