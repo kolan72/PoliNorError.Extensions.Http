@@ -62,7 +62,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 ```
 , where `AskCatService` is a service that implements `IAskCatService`, with `HttpClient` or `IHttpClientFactory` injected.
 
-2. Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method and configure the pipeline of `DelegatingHandler`s by using the `AddPolicyHandler` method with the policy you want to apply in this handler:
+2. Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method to build a pipeline of `DelegatingHandler`s. Within this scope, configure a handler to use a policy via the `AddPolicyHandler` method:
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
 	{

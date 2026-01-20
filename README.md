@@ -70,7 +70,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 , where `AskCatService` is a service that implements `IAskCatService`, with `HttpClient` or `IHttpClientFactory` injected.
 
 ---
-🧩 Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method and configure the pipeline of `DelegatingHandler`s by using the `AddPolicyHandler` method with the policy you want to apply in this handler:
+🧩 Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method to build a pipeline of `DelegatingHandler`s. Within this scope, configure a handler to use a policy via the `AddPolicyHandler` method:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
@@ -172,7 +172,7 @@ catch (Exception ex)
 
 ## 🔁 Adding Handlers Based on `RetryPolicy` Using the `AddRetryHandler` Extension Methods.
 
-The `AddRetryHandler` extension methods provide a fluent way to attach a `RetryPolicy` to an HTTP message handler pipeline. 
+The `AddRetryHandler` extension methods provide a fluent way to attach a `RetryPolicy` to an HTTP message handler pipeline. 
 One of these methods allows adding a handler via `RetryPolicyOptions` and is responsible for setting up `RetryPolicy` details, including:
 - Error processing,
 - Policy result handling,
@@ -181,7 +181,7 @@ One of these methods allows adding a handler via `RetryPolicyOptions` and is res
 - Delay between retries,
 - And ultimately registering the policy with `AddPolicyHandler`.
 
-For example:
+### Example: Retry with logging, filtering, and delay:
 ```csharp
 var retryOptions = new RetryPolicyOptions()
 {
@@ -221,7 +221,7 @@ This example configures `RetryPolicyOptions` with:
 - A result handler (logs warnings about exception counts),
 - A 1-second constant delay between retries.
 
-This is how `RetryPolicyOptions` is passed to `AddRetryHandler` in the pipeline:
+Attach a retry handler to the pipeline using these options:
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 	{
