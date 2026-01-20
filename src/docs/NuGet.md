@@ -89,7 +89,7 @@ and/or any non-successful status codes or categories
 		...
 
 ```
-You can also include in the filter any exception type thrown by an inner handler:
+Use `IncludeException<TException>` on the pipeline builder to allow an outer handler to handle only filtered exceptions from an inner handler or outside the pipeline:
 ```csharp
 		...
 		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
@@ -100,8 +100,8 @@ You can also include in the filter any exception type thrown by an inner handler
 
 ```  
 
-4. In a service that uses `HttpClient` or `HttpClientFactory`, wrap the call to `HttpClient` in a catch block that handles the special `HttpPolicyResultException` exception. 
-If the request was not successful, examine the `HttpPolicyResultException` properties in this handler for details of the response:
+4. Wrap `HttpClient` calls in a `catch` block for `HttpPolicyResultException`.
+For unsuccessful requests, inspect the properties of `HttpPolicyResultException` to access response details:
 ```csharp
 try
 {
@@ -135,7 +135,7 @@ Public properties of the `HttpPolicyResultException`:
 - `InnerException` 
 	- If the response status code matches the handling filter’s status code, it will be a special `FailedHttpResponseException`.  
 	- If no handlers inside or outside the resiliency pipeline throw an exception, and the `HttpClient`’s primary handler throws an `HttpRequestException`, the `InnerException` will be that `HttpRequestException`.
-	- Otherwise, the exception originates from one of the handlers, either inside or outside the pipeline.
+	- Otherwise, the exception originates from one of the handlers, either inside or outside the resiliency pipeline.
 - `FailedResponseData` - not null if the status code part of the handling filter matches the response status code.
 - `HasFailedResponse` - true if `FailedResponseData` is not null.
 - `PolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result that is produced by a policy that belongs to the `DelegatingHandler` that throws this exception.  
