@@ -20,7 +20,7 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
   Precisely control *which* HTTP responses and exceptions should be treated as failures:
 
   * Transient HTTP errors (5xx, 408, 429)
-  * `HttpRequestException` and any other exception types
+  * `HttpRequestException`
   * Custom status codes or status code categories
 
 * **Full exception transparency**
