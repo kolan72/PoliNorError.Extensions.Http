@@ -253,6 +253,15 @@ Public properties of the `HttpPolicyResultException`:
 - `IsErrorExpected` - indicates whether the filter for the original exception was satisfied.
 - `IsCanceled` - indicates whether the execution was canceled.
 
+## 🛠️ Understanding the Exception Hierarchy
+
+One of the most powerful features of this library is the **comprehensive** `HttpPolicyResultException`, which **encapsulates** the execution history of your pipeline within its properties.
+When a request fails after exhausting all policies, this exception contains several "layers" of information:
+
+* **`PolicyResult`**: This is the result from the *outer handler* that finally gave up and threw the exception.
+* **`InnermostPolicyResult`**: Access `InnermostPolicyResult` to *evaluate the root cause* encountered by the final handler in the pipeline.
+* **`FailedResponseData`**:  Contains the `HttpStatusCode` and other useful failure details. This property is *non-null only* if the response status code matches your configured `HttpErrorFilter` status code.
+
 ## ❓ Why PoliNorError.Extensions.Http?
 
 * **Declarative pipeline builder for `HttpClient` via `WithResiliencePipeline`**
