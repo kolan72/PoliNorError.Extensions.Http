@@ -8,13 +8,44 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 ## ⚡ Key Features
 
-- Provides the ability to create a resiliency pipeline to handle typical transient HTTP failures (including the `HttpRequestException` exception).  
-- Flexible transient failure filter for the final `DelegatingHandler` in the pipeline for the response.  
-- Additionally, custom failure status codes or categories can be added to the final handler filter.  
-- Other exception types (besides `HttpRequestException`) can also be included in the final handler filter.  
-- Inclusion in the outer handler filter of any `Exception` type thrown by the inner handler is also supported.  
-- Both typed and named `HttpClient`, as well as `IHttpClientFactory`, can be used. 
-- Targets .NET Standard 2.0.  
+* **Explicit resiliency pipeline** based on `DelegatingHandler`s
+
+* **Flexible policy creation**
+
+  * Inline policies
+  * Policies resolved from `IServiceProvider`
+  * Context-aware policy creation
+
+* **Powerful final-handler failure filtering**
+  Precisely control *which* HTTP responses and exceptions should be treated as failures:
+
+  * Transient HTTP errors (5xx, 408, 429)
+  * `HttpRequestException`
+  * Custom status codes or status code categories
+
+* **Full exception transparency**
+  Failures are surfaced via a single, rich exception:
+  `HttpPolicyResultException`, preserving:
+
+  * The original exception
+  * HTTP response details
+  * Policy execution results
+
+* **Control exception flow between handlers using `IncludeException<TException>`**
+
+* **Deep PoliNorError integration**
+  Use PoliNorError's fluent APIs for:
+
+  * Retry, fallback, and custom policies
+  * Exception filtering and processing
+  * Policy result inspection and logging
+
+* **Works with**
+
+  * Typed and named `HttpClient`
+  * `IHttpClientFactory`
+
+* **.NET Standard 2.0 compatible**  
 
 ## 🔑 Key Concepts
 
@@ -39,7 +70,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 , where `AskCatService` is a service that implements `IAskCatService`, with `HttpClient` or `IHttpClientFactory` injected.
 
 ---
-🧩 Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method and configure the pipeline of `DelegatingHandler`s by using the `AddPolicyHandler` method with the policy you want to apply in this handler:
+🧩 Use the library's `IHttpClientBuilder.WithResiliencePipeline` extension method to build a pipeline of `DelegatingHandler`s. Within this scope, configure a handler to use a policy via the `AddPolicyHandler` method:
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
@@ -74,7 +105,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((spForClient, client) =>
 - `funcThatUsesServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` to create a policy.  
 - `funcThatUsesContextAndServiceProviderToCreatePolicy` - `Func` that uses the `IServiceProvider` and context to create a policy.  
 ---
-🔵 When you want to complete the pipeline, call the `AsFinalHandler` method for the last added handler and configure `HttpErrorFilter` to filter transient http errors and/or any non-successful status codes or categories:
+🔵 Complete the pipeline by calling `AsFinalHandler` on the last handler and configuring `HttpErrorFilter` to filter transient HTTP errors,
 
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
@@ -90,7 +121,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 		...
 	)
 ```
-Additionally, you can include custom failure status codes or categories in the final handler filter:
+and/or any non-successful status codes or categories
 ```csharp
 		...
 		.AsFinalHandler(HttpErrorFilter.HandleHttpRequestException()
@@ -99,7 +130,7 @@ Additionally, you can include custom failure status codes or categories in the f
 		...
 
 ```
-You can also include in the filter any exception type thrown by an inner handler:
+Use `IncludeException<TException>` on the pipeline builder to allow an outer handler to handle only filtered exceptions from an inner handler or outside the pipeline:
 ```csharp
 		...
 		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
@@ -110,8 +141,8 @@ You can also include in the filter any exception type thrown by an inner handler
 
 ```
 ---
-⚾ In a service that uses `HttpClient` or `HttpClientFactory`, wrap the call to `HttpClient` in a catch block that handles the special `HttpPolicyResultException` exception. 
-If the request was not successful, examine the `HttpPolicyResultException` properties in this handler for details of the response:
+⚾ Wrap `HttpClient` calls in a `catch` block for `HttpPolicyResultException`.
+For unsuccessful requests, inspect the properties of `HttpPolicyResultException` to access response details:
 
 ```csharp
 try
@@ -141,7 +172,7 @@ catch (Exception ex)
 
 ## 🔁 Adding Handlers Based on `RetryPolicy` Using the `AddRetryHandler` Extension Methods.
 
-The `AddRetryHandler` extension methods provide a fluent way to attach a `RetryPolicy` to an HTTP message handler pipeline. 
+The `AddRetryHandler` extension methods provide a fluent way to attach a `RetryPolicy` to an HTTP message handler pipeline. 
 One of these methods allows adding a handler via `RetryPolicyOptions` and is responsible for setting up `RetryPolicy` details, including:
 - Error processing,
 - Policy result handling,
@@ -150,7 +181,7 @@ One of these methods allows adding a handler via `RetryPolicyOptions` and is res
 - Delay between retries,
 - And ultimately registering the policy with `AddPolicyHandler`.
 
-For example:
+### Example: Retry with logging, filtering, and delay:
 ```csharp
 var retryOptions = new RetryPolicyOptions()
 {
@@ -190,7 +221,7 @@ This example configures `RetryPolicyOptions` with:
 - A result handler (logs warnings about exception counts),
 - A 1-second constant delay between retries.
 
-This is how `RetryPolicyOptions` is passed to `AddRetryHandler` in the pipeline:
+Attach a retry handler to the pipeline using these options:
 ```csharp
 services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 	{
@@ -214,13 +245,39 @@ Public properties of the `HttpPolicyResultException`:
 - `InnerException` 
 	- If the response status code matches the handling filter’s status code, it will be a special `FailedHttpResponseException`.  
 	- If no handlers inside or outside the resiliency pipeline throw an exception, and the `HttpClient`’s primary handler throws an `HttpRequestException`, the `InnerException` will be that `HttpRequestException`.
-	- Otherwise, the exception originates from one of the handlers, either inside or outside the pipeline.
+	- Otherwise, the exception originates from one of the handlers, either inside or outside the resiliency pipeline.
 - `FailedResponseData` - not null if the status code part of the handling filter matches the response status code.
 - `HasFailedResponse` - true if `FailedResponseData` is not null.
 - `PolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result that is produced by a policy that belongs to the `DelegatingHandler` that throws this exception.  
 - `InnermostPolicyResult` - specifies the `PolicyResult<HttpResponseMessage>` result produced by a policy of the final handler or by a handler in the pipeline that throws its own exception. 
 - `IsErrorExpected` - indicates whether the filter for the original exception was satisfied.
 - `IsCanceled` - indicates whether the execution was canceled.
+
+## 🛠️ Understanding the Exception Hierarchy
+
+One of the key features of this library is the `HttpPolicyResultException`, which captures the execution history of the pipeline within its properties.
+When a request fails after exhausting all policies, this exception contains several "layers" of information:
+
+* **`PolicyResult`**: This is the result from the *outer handler* that finally gave up and threw the exception.
+* **`InnermostPolicyResult`**: Access `InnermostPolicyResult` to *evaluate the root cause* encountered by the final handler in the pipeline.
+* **`FailedResponseData`**:  Contains the `HttpStatusCode` and other useful failure details. This property is *non-null only* if the response status code matches your configured `HttpErrorFilter` status code.
+
+## ❓ Why PoliNorError.Extensions.Http?
+
+* **Declarative pipeline builder for `HttpClient` via `WithResiliencePipeline`**
+
+* **First-class support for typed and named `HttpClient`**
+
+* **You decide what a failure is**
+  - Filter transient HTTP errors in the flexible final handler and control exception flow between handlers.
+
+* **One clear failure signal**
+  - All handled failures surface as a single, information-rich `HttpPolicyResultException`.
+
+* **Helpers to add handlers with rich configuration (`AddRetryHandler`, `AddFallbackHandler`)**
+
+* **First-class PoliNorError integration**
+  - Advanced error processing, contextual logging, and policy result inspection.
 
 ## 🐈 Samples [![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro)
 

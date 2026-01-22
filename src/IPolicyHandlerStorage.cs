@@ -29,7 +29,7 @@ namespace PoliNorError.Extensions.Http
 	/// </summary>
 	/// <typeparam name="TStorage">Type of storage.</typeparam>
 	/// <typeparam name="TContext">Type of overall context.</typeparam>
-	public interface IPolicyHandlerStorage<TStorage, out TContext> : IPolicyHandlerStorage<TStorage> where TStorage : IPolicyHandlerStorage<TStorage, TContext>
+	public interface IPolicyHandlerStorage<TStorage, TContext> : IPolicyHandlerStorage<TStorage> where TStorage : IPolicyHandlerStorage<TStorage, TContext>
 	{
 		/// <summary>
 		/// Adds <see cref="System.Net.Http.DelegatingHandler"/> that uses a policy created by <paramref name="policyFactory"/> with an overall context parameter to handle errors.
