@@ -255,7 +255,7 @@ Public properties of the `HttpPolicyResultException`:
 
 ## 🛠️ Understanding the Exception Hierarchy
 
-One of the most powerful features of this library is the **comprehensive** `HttpPolicyResultException`, which **encapsulates** the execution history of your pipeline within its properties.
+One of the key features of this library is the `HttpPolicyResultException`, which captures the execution history of the pipeline within its properties.
 When a request fails after exhausting all policies, this exception contains several "layers" of information:
 
 * **`PolicyResult`**: This is the result from the *outer handler* that finally gave up and threw the exception.
