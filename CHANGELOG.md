@@ -1,3 +1,20 @@
+## 0.9.1
+
+- Added `AddFallbackHandler` method to the library's pipeline builders.
+- Added a new overload to `AddFallbackHandler` method that accepts a `Func<IServiceProvider, FallbackPolicyBase>` factory delegate.
+- Added a new overload to `AddFallbackHandler` method that accepts a `Func<TContext, IServiceProvider, FallbackPolicyBase>` factory delegate.
+- Remove invalid covariance on `TContext` in `IPolicyHandlerStorage<TStorage, TContext>`.
+- Update lib, tests, and samples to PoliNorError 2.24.20.
+- Update Microsoft NuGet packages for the library, tests, and Samples.
+- Upgrade Samples to Spectre.Console v0.54.0.
+- Log outer and final policy result exceptions in the Retries samples.
+- Add 'Adding Handlers Based on `RetryPolicy` Using the `AddRetryHandler` Extension Methods' chapter to NuGet.md.
+- Add 'Why PoliNorError.Extensions.Http?' chapter to NuGet.md and README.
+- Add 'Understanding the Exception Hierarchy' README chapter.
+- Edit the 'Usage' chapter in README and NuGet.md.
+- Edit the 'Key Features' chapter in README and NuGet.md.
+
+
 ## 0.8.0
 
 - Add `AddInfiniteRetryHandler` extension overloads to the pipeline builder that accept `Action<RetryPolicyOptions>` and `RetryPolicyOptions`.
