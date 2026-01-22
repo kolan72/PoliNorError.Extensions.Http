@@ -15,7 +15,6 @@
     <PackageProjectUrl>https://github.com/kolan72/PoliNorError.Extensions.Http</PackageProjectUrl>
     <RepositoryUrl>https://github.com/kolan72/PoliNorError.Extensions.Http</RepositoryUrl>
     <AssemblyVersion>0.5.0.0</AssemblyVersion>
-    <UserSecretsId>9e1787b7-ff2d-4e61-b7b3-85ecbed64cef</UserSecretsId>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
