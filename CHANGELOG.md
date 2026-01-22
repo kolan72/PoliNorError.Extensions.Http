@@ -1,3 +1,21 @@
+## 0.8.0
+
+- Add `AddInfiniteRetryHandler` extension overloads to the pipeline builder that accept `Action<RetryPolicyOptions>` and `RetryPolicyOptions`.
+- Change the `PolicyOptions.ConfigureErrorProcessing` type from `Action<IBulkErrorProcessor>` to `Action<BulkErrorProcessor>` to allow broader configuration.
+- Refactor `IHttpPolicyResultHandler.AttachTo` to use the base `Policy` class instead of `RetryPolicy`, and call `AddHandlerForPolicyResult` in implementations.
+- Refactor internal `HttpPolicyResultHandlers.AttachTo` method to use the base `Policy` class instead of `RetryPolicy`.
+- Update lib and tests to PoliNorError 2.24.12.
+- Update Microsoft nuget packages.
+- Update NUnit NuGet package to v4.4.0.
+- Add test to verify `InfiniteRetryHandler` is canceled when cancellation occurs in `ErrorProcessor`.
+- Target the Samples project to .NET 8.0.
+- Remove redundant NuGet packages in Fallback.csproj and Retries.csproj of Samples project.
+- Upgrade Samples to PoliNorError v2.24.12 and PoliNorError.Extensions.Http 0.5.0.
+- Update the '`HttpPolicyResultException` properties' section in the README.
+- Update the 'Key Concepts' section in the README.
+- Update NuGet.md.
+
+
 ## 0.5.0
 
 - Introduced the `RetryPolicyOptions.ProcessRetryAfterHeader` property, which allows handling of the `Retry-After` header.
