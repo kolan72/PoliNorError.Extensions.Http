@@ -10,6 +10,11 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 **Explicit resiliency pipeline** based on `DelegatingHandler`s
 
+**Works with**  
+
+	- Typed and named `HttpClient`
+  	- `IHttpClientFactory`
+
 **Flexible policy creation** 
 
 	- Inline policies
@@ -41,11 +46,6 @@ Failures are surfaced via a single, rich exception `HttpPolicyResultException`, 
 	- Retry, fallback, and custom policies
   	- Exception filtering and processing
   	- Policy result inspection and logging
-
-**Works with**  
-
-	- Typed and named `HttpClient`
-  	- `IHttpClientFactory`
 
  **.NET Standard 2.0 compatible**  
 
