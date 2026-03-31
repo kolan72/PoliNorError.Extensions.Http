@@ -109,6 +109,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FallbackTests.cs" />
     <Compile Include="HttpErrorFilterTests.cs" />
     <Compile Include="FakeDelegatingHandlers.cs" />
     <Compile Include="HttpPolicyResultHandlersTests.cs" />
