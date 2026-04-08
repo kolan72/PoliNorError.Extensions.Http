@@ -27,7 +27,7 @@ namespace PoliNorError.Extensions.Http.Tests
 		public void Should_Throw_ArgumentNullException_When_Func_Is_Null()
 		{
 			// Act & Assert
-			Assert.That(() => new Fallback(null), Throws.ArgumentNullException);
+			Assert.That(() => new Fallback((Func<CancellationToken, HttpResponseMessage>)null), Throws.ArgumentNullException);
 		}
 
 		[Test]
