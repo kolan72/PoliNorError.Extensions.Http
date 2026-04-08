@@ -12,9 +12,16 @@ namespace PoliNorError.Extensions.Http
 			Func = func ?? throw new ArgumentNullException(nameof(func));
 		}
 
+		public Fallback(Func<CancellationToken, Task<HttpResponseMessage>> func)
+		{
+			AsyncFunc = func ?? throw new ArgumentNullException(nameof(func));
+		}
+
 		internal Func<CancellationToken, HttpResponseMessage> Func { get; set; }
 
+		internal Func<CancellationToken, Task<HttpResponseMessage>> AsyncFunc { get; set; }
+
 		public static implicit operator Func<CancellationToken, Task<HttpResponseMessage>>(Fallback fallback)
-			=> ct => Task.FromResult(fallback.Func(ct));
+			=> fallback.AsyncFunc ?? (ct => Task.FromResult(fallback.Func(ct)));
 	}
 }
