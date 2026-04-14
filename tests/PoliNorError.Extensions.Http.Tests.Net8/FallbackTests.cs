@@ -1,9 +1,4 @@
-﻿using NUnit.Framework;
-using System;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Net;
 
 namespace PoliNorError.Extensions.Http.Tests
 {
@@ -14,20 +9,20 @@ namespace PoliNorError.Extensions.Http.Tests
 		public void Should_Store_Func_When_Constructor_Is_Called()
 		{
 			// Arrange
-			HttpResponseMessage expectedFunc(CancellationToken _) => new HttpResponseMessage(HttpStatusCode.OK);
+			static HttpResponseMessage expectedFunc(CancellationToken _) => new(HttpStatusCode.OK);
 
 			// Act
 			var fallback = new Fallback(expectedFunc);
 
 			// Assert
-			Assert.That(fallback.Func, Is.EqualTo((Func<CancellationToken, HttpResponseMessage>)expectedFunc));
+			Assert.That(fallback.Func, Is.EqualTo(expectedFunc));
 		}
 
 		[Test]
 		public void Should_Throw_ArgumentNullException_When_Func_Is_Null()
 		{
 			// Act & Assert
-			Assert.That(() => new Fallback((Func<CancellationToken, HttpResponseMessage>)null), Throws.ArgumentNullException);
+			Assert.That(() => new Fallback((Func<CancellationToken, HttpResponseMessage>?)null), Throws.ArgumentNullException);
 		}
 
 		[Test]
@@ -35,15 +30,17 @@ namespace PoliNorError.Extensions.Http.Tests
 		{
 			// Arrange
 			var expectedResponse = new HttpResponseMessage(HttpStatusCode.OK);
-			var fallback = new Fallback(_ => expectedResponse);
 
 			// Act
-			Func<CancellationToken, Task<HttpResponseMessage>> asyncFunc = fallback;
+			Func<CancellationToken, Task<HttpResponseMessage>> asyncFunc = new Fallback(_ => expectedResponse);
 			var result = await asyncFunc(CancellationToken.None);
 
-			// Assert
-			Assert.That(asyncFunc, Is.Not.Null);
-			Assert.That(result, Is.EqualTo(expectedResponse));
+			using (Assert.EnterMultipleScope())
+			{
+				// Assert
+				Assert.That(asyncFunc, Is.Not.Null);
+				Assert.That(result, Is.EqualTo(expectedResponse));
+			}
 		}
 
 		[Test]
@@ -57,27 +54,24 @@ namespace PoliNorError.Extensions.Http.Tests
 				return new HttpResponseMessage(HttpStatusCode.OK);
 			});
 
-			using (var cts = new CancellationTokenSource())
-			{
-				var expectedToken = cts.Token;
+			using var cts = new CancellationTokenSource();
+			var expectedToken = cts.Token;
 
-				// Act
-				Func<CancellationToken, Task<HttpResponseMessage>> asyncFunc = fallback;
-				await asyncFunc(expectedToken);
+			// Act
+			Func<CancellationToken, Task<HttpResponseMessage>> asyncFunc = fallback;
+			await asyncFunc(expectedToken);
 
-				// Assert
-				Assert.That(capturedToken, Is.EqualTo(expectedToken));
-			}
+			// Assert
+			Assert.That(capturedToken, Is.EqualTo(expectedToken));
 		}
 
 		[Test]
 		public async Task Should_Return_Completed_Task_When_Converted_To_Async_Func()
 		{
 			// Arrange
-			var fallback = new Fallback(_ => new HttpResponseMessage(HttpStatusCode.Accepted));
+			Func<CancellationToken, Task<HttpResponseMessage>> asyncFunc = new Fallback(_ => new HttpResponseMessage(HttpStatusCode.Accepted));
 
 			// Act
-			Func<CancellationToken, Task<HttpResponseMessage>> asyncFunc = fallback;
 			var task = asyncFunc(CancellationToken.None);
 
 			// Assert
@@ -119,9 +113,12 @@ namespace PoliNorError.Extensions.Http.Tests
 			Func<CancellationToken, Task<HttpResponseMessage>> asyncFunc = fallback;
 			var result = await asyncFunc(CancellationToken.None);
 
-			// Assert
-			Assert.That(result.StatusCode, Is.EqualTo(expectedStatusCode));
-			Assert.That(result.Content, Is.EqualTo(expectedContent));
+			using (Assert.EnterMultipleScope())
+			{
+				// Assert
+				Assert.That(result.StatusCode, Is.EqualTo(expectedStatusCode));
+				Assert.That(result.Content, Is.EqualTo(expectedContent));
+			}
 		}
 
 		[Test]
