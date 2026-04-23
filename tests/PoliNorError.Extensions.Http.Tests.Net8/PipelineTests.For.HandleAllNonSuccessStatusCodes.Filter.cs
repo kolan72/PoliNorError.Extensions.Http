@@ -1,9 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 
 namespace PoliNorError.Extensions.Http.Tests
 {
@@ -29,12 +25,13 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			using (Assert.EnterMultipleScope())
+			{
 				Assert.That(exception.IsErrorExpected, Is.True);
 				Assert.That(i, Is.EqualTo(3));
 				Assert.That(exception.ThrownByFinalHandler, Is.True);
@@ -66,14 +63,12 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var res = await sut.SendAsync(request);
-				Assert.That((int)res.StatusCode, Is.EqualTo(statusCodeToCheck));
-			}
+			var res = await sut.SendAsync(request);
+			Assert.That((int)res.StatusCode, Is.EqualTo(statusCodeToCheck));
 		}
 	}
 }
