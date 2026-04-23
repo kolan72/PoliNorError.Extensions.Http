@@ -6,7 +6,7 @@ namespace PoliNorError.Extensions.Http
 	{
 		void IncludeException<TException>(Func<TException, bool> func = null) where TException : Exception;
 		void IncludeExceptionForFinalHandler<TException>(Func<TException, bool> func = null) where TException : Exception;
-		void CorrectFiler();
+		void CorrectFilter();
 		void AsFinalHandler(HttpErrorFilterCriteria errorsToHandle);
 	}
 }
