@@ -37,26 +37,24 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				if (unsatisfied)
-				{
-					var res = await sut.SendAsync(request);
-					Assert.That(res.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-				}
-				else
-				{
-					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-					Assert.That(exception.IsErrorExpected, Is.True);
-					Assert.That(i, Is.EqualTo(3));
-					Assert.That(exception.HasFailedResponse, Is.True);
-					Assert.That(exception.FailedResponseData, Is.Not.Null);
-					Assert.That(exception.FailedResponseData.StatusCode, Is.EqualTo(satisfiedStatusCode));
-					Assert.That(exception.ThrownByFinalHandler, Is.True);
-				}
+			if (unsatisfied)
+			{
+				var res = await sut.SendAsync(request);
+				Assert.That(res.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+			}
+			else
+			{
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+				Assert.That(exception.IsErrorExpected, Is.True);
+				Assert.That(i, Is.EqualTo(3));
+				Assert.That(exception.HasFailedResponse, Is.True);
+				Assert.That(exception.FailedResponseData, Is.Not.Null);
+				Assert.That(exception.FailedResponseData.StatusCode, Is.EqualTo(satisfiedStatusCode));
+				Assert.That(exception.ThrownByFinalHandler, Is.True);
 			}
 		}
 
@@ -90,25 +88,23 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				if (unsatisfied)
-				{
-					var res = await sut.SendAsync(request);
-					Assert.That(res.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-				}
-				else
-				{
-					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-					Assert.That(exception.IsErrorExpected, Is.True);
-					Assert.That(i, Is.EqualTo(12));
-					Assert.That(k, Is.EqualTo(3));
-					Assert.That(exception.FailedResponseData, Is.Not.Null);
-					Assert.That(exception.ThrownByFinalHandler, Is.False);
-				}
+			if (unsatisfied)
+			{
+				var res = await sut.SendAsync(request);
+				Assert.That(res.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+			}
+			else
+			{
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+				Assert.That(exception.IsErrorExpected, Is.True);
+				Assert.That(i, Is.EqualTo(12));
+				Assert.That(k, Is.EqualTo(3));
+				Assert.That(exception.FailedResponseData, Is.Not.Null);
+				Assert.That(exception.ThrownByFinalHandler, Is.False);
 			}
 		}
 
@@ -133,25 +129,23 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				if (unsatisfied)
-				{
-					var res = await sut.SendAsync(request);
-					Assert.That(res.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
-				}
-				else
-				{
-					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-					Assert.That(exception.IsErrorExpected, Is.True);
-					Assert.That(i, Is.EqualTo(12));
-					Assert.That(k, Is.EqualTo(3));
-					Assert.That(exception.FailedResponseData, Is.Not.Null);
-					Assert.That(exception.ThrownByFinalHandler, Is.False);
-				}
+			if (unsatisfied)
+			{
+				var res = await sut.SendAsync(request);
+				Assert.That(res.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+			}
+			else
+			{
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+				Assert.That(exception.IsErrorExpected, Is.True);
+				Assert.That(i, Is.EqualTo(12));
+				Assert.That(k, Is.EqualTo(3));
+				Assert.That(exception.FailedResponseData, Is.Not.Null);
+				Assert.That(exception.ThrownByFinalHandler, Is.False);
 			}
 		}
 	}

@@ -35,30 +35,28 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+
+			Assert.That(exception?.HasFailedResponse == true, Is.False);
+
+			if (filterExists)
 			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
-
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-
-				Assert.That(exception?.HasFailedResponse == true, Is.False);
-
-				if (filterExists)
-				{
-					Assert.That(exception?.IsErrorExpected == true, Is.True);
-					Assert.That(i, Is.EqualTo(3));
-				}
-				else
-				{
-					Assert.That(exception?.IsErrorExpected == true, Is.False);
-					Assert.That(i, Is.EqualTo(0));
-				}
-
-				Assert.That(exception?.ThrownByFinalHandler == true, Is.True);
-
-				Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
+				Assert.That(exception?.IsErrorExpected == true, Is.True);
+				Assert.That(i, Is.EqualTo(3));
 			}
+			else
+			{
+				Assert.That(exception?.IsErrorExpected == true, Is.False);
+				Assert.That(i, Is.EqualTo(0));
+			}
+
+			Assert.That(exception?.ThrownByFinalHandler == true, Is.True);
+
+			Assert.That(exception?.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
 		}
 
 		[Test]
@@ -93,27 +91,25 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+			if (statusCodeFilerType == StatusCodeFilerType.NoFilter)
 			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+				var result = await sut.SendAsync(request);
+				Assert.That(result.StatusCode, Is.EqualTo(badStatusCode));
 
-				if (statusCodeFilerType == StatusCodeFilerType.NoFilter)
-				{
-					var result = await sut.SendAsync(request);
-					Assert.That(result.StatusCode, Is.EqualTo(badStatusCode));
-
-					Assert.That(i, Is.EqualTo(0));
-				}
-				else
-				{
-					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-					Assert.That(exception.IsErrorExpected, Is.True);
-					Assert.That(i, Is.EqualTo(3));
-					Assert.That(exception.FailedResponseData, Is.Not.Null);
-					Assert.That(exception.ThrownByFinalHandler, Is.True);
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
-				}
+				Assert.That(i, Is.EqualTo(0));
+			}
+			else
+			{
+				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+				Assert.That(exception.IsErrorExpected, Is.True);
+				Assert.That(i, Is.EqualTo(3));
+				Assert.That(exception.FailedResponseData, Is.Not.Null);
+				Assert.That(exception.ThrownByFinalHandler, Is.True);
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
 			}
 		}
 
@@ -138,24 +134,22 @@ namespace PoliNorError.Extensions.Http.Tests
 																					.AsFinalHandler(filter));
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var res = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				if (withHttpRequestExceptionFilter)
-				{
-					Assert.That(res.IsErrorExpected, Is.True);
-					Assert.That(i, Is.EqualTo(3));
-				}
-				else
-				{
-					Assert.That(res.IsErrorExpected, Is.False);
-					Assert.That(i, Is.EqualTo(0));
-				}
-				Assert.That(res.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
+			var res = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			if (withHttpRequestExceptionFilter)
+			{
+				Assert.That(res.IsErrorExpected, Is.True);
+				Assert.That(i, Is.EqualTo(3));
 			}
+			else
+			{
+				Assert.That(res.IsErrorExpected, Is.False);
+				Assert.That(i, Is.EqualTo(0));
+			}
+			Assert.That(res.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
 		}
 
 		[Test]
@@ -191,14 +185,12 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var res = await sut.SendAsync(request);
-				Assert.That(res.StatusCode, Is.EqualTo(HttpStatusCode.OK));
-			}
+			var res = await sut.SendAsync(request);
+			Assert.That(res.StatusCode, Is.EqualTo(HttpStatusCode.OK));
 		}
 
 		internal enum StatusCodeFilerType

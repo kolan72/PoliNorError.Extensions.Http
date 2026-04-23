@@ -36,24 +36,22 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			Assert.That(exception.IsErrorExpected, Is.True);
+			Assert.That(i, Is.EqualTo(3));
+			Assert.That(exception.ThrownByFinalHandler, Is.True);
+
+			if (isHttpStatusCode)
 			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
-
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				Assert.That(exception.IsErrorExpected, Is.True);
-				Assert.That(i, Is.EqualTo(3));
-				Assert.That(exception.ThrownByFinalHandler, Is.True);
-
-				if (isHttpStatusCode)
-				{
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
-				}
-				else
-				{
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
-				}
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
+			}
+			else
+			{
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
 			}
 		}
 
@@ -81,16 +79,14 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				Assert.That(exception.IsErrorExpected, Is.True);
-				Assert.That(i, Is.EqualTo(3));
-				Assert.That(exception.ThrownByFinalHandler, Is.True);
-			}
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			Assert.That(exception.IsErrorExpected, Is.True);
+			Assert.That(i, Is.EqualTo(3));
+			Assert.That(exception.ThrownByFinalHandler, Is.True);
 		}
 
 		[Test]
@@ -117,14 +113,12 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var res = await sut.SendAsync(request);
-				Assert.That((int)res.StatusCode, Is.EqualTo(statusCodeToCheck));
-			}
+			var res = await sut.SendAsync(request);
+			Assert.That((int)res.StatusCode, Is.EqualTo(statusCodeToCheck));
 		}
 
 		[Test]
@@ -141,17 +135,15 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				Assert.That(exception.IsErrorExpected, Is.True);
-				Assert.That(i, Is.EqualTo(3));
-				Assert.That(exception.ThrownByFinalHandler, Is.True);
-				Assert.That(exception.HasFailedResponse, Is.False);
-			}
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			Assert.That(exception.IsErrorExpected, Is.True);
+			Assert.That(i, Is.EqualTo(3));
+			Assert.That(exception.ThrownByFinalHandler, Is.True);
+			Assert.That(exception.HasFailedResponse, Is.False);
 		}
 	}
 }

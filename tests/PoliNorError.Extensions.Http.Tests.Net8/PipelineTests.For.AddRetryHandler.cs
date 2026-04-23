@@ -106,14 +106,12 @@ namespace PoliNorError.Extensions.Http.Tests
 
 		private TFailure Send<TFailure>(IServiceCollection services) where TFailure : Exception
 		{
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				return Assert.ThrowsAsync<TFailure>(async () => await sut.SendAsync(request));
-			}
+			return Assert.ThrowsAsync<TFailure>(async () => await sut.SendAsync(request));
 		}
 
 		public async Task<HttpStatusCode> InvokeHttpClientWithStatusCode(Func<IEmptyPipelineBuilder, IPipelineBuilder> pipelineFactory)
@@ -162,13 +160,11 @@ namespace PoliNorError.Extensions.Http.Tests
 
 		private async Task<HttpStatusCode> SendAndGetStatusCode(IServiceCollection services)
 		{
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
-				return (await sut.SendAsync(request)).StatusCode;
-			}
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			return (await sut.SendAsync(request)).StatusCode;
 		}
 	}
 

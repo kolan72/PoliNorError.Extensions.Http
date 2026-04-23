@@ -34,30 +34,28 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
-				{
-					Assert.That(exception.IsErrorExpected, Is.False);
-					Assert.That(i, Is.EqualTo(0));
-					Assert.That(k, Is.EqualTo(0));
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
-				}
-				else
-				{
-					Assert.That(exception.IsErrorExpected, Is.True);
-					Assert.That(m, Is.EqualTo(3));
-					Assert.That(k, Is.EqualTo(12));
-					Assert.That(i, Is.EqualTo(48));
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
-				}
-				Assert.That(exception.FailedResponseData, Is.Null);
-				Assert.That(exception.ThrownByFinalHandler, Is.False);
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
+			{
+				Assert.That(exception.IsErrorExpected, Is.False);
+				Assert.That(i, Is.EqualTo(0));
+				Assert.That(k, Is.EqualTo(0));
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
 			}
+			else
+			{
+				Assert.That(exception.IsErrorExpected, Is.True);
+				Assert.That(m, Is.EqualTo(3));
+				Assert.That(k, Is.EqualTo(12));
+				Assert.That(i, Is.EqualTo(48));
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
+			}
+			Assert.That(exception.FailedResponseData, Is.Null);
+			Assert.That(exception.ThrownByFinalHandler, Is.False);
 		}
 
 		[Test]
@@ -103,33 +101,31 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+
+			if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
 			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
-
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-
-				if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
-				{
-					Assert.That(o, Is.EqualTo(0));
-					Assert.That(m, Is.EqualTo(3));
-					Assert.That(k, Is.EqualTo(12));
-					Assert.That(i, Is.EqualTo(48));
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
-				}
-				else
-				{
-					Assert.That(o, Is.EqualTo(3));
-					Assert.That(m, Is.EqualTo(12));
-					Assert.That(k, Is.EqualTo(48));
-					Assert.That(i, Is.EqualTo(192));
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
-				}
-
-				Assert.That(exception.ThrownByFinalHandler, Is.False);
-				Assert.That(exception.IsErrorExpected, Is.False);
+				Assert.That(o, Is.EqualTo(0));
+				Assert.That(m, Is.EqualTo(3));
+				Assert.That(k, Is.EqualTo(12));
+				Assert.That(i, Is.EqualTo(48));
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
 			}
+			else
+			{
+				Assert.That(o, Is.EqualTo(3));
+				Assert.That(m, Is.EqualTo(12));
+				Assert.That(k, Is.EqualTo(48));
+				Assert.That(i, Is.EqualTo(192));
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
+			}
+
+			Assert.That(exception.ThrownByFinalHandler, Is.False);
+			Assert.That(exception.IsErrorExpected, Is.False);
 		}
 	}
 }

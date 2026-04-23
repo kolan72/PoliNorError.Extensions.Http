@@ -1,7 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
-using System.Net.Http;
-using System.Threading;
 
 namespace PoliNorError.Extensions.Http.Tests
 {
@@ -22,16 +19,14 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				Assert.That(exception.HasFailedResponse, Is.False);
-				Assert.That(exception.IsErrorExpected, Is.False);
-				Assert.That(i, Is.EqualTo(0));
-			}
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			Assert.That(exception.HasFailedResponse, Is.False);
+			Assert.That(exception.IsErrorExpected, Is.False);
+			Assert.That(i, Is.EqualTo(0));
 		}
 
 		[Test]
@@ -39,31 +34,27 @@ namespace PoliNorError.Extensions.Http.Tests
 		{
 			int i = 0;
 
-			using (var cts = new CancellationTokenSource())
-			{
-				cts.Cancel();
-				var services = new ServiceCollection();
+			using var cts = new CancellationTokenSource();
+			cts.Cancel();
+			var services = new ServiceCollection();
 
-				services.AddFakeHttpClient()
-				.WithResiliencePipeline((empyConfig) => empyConfig
-															.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
-															//No filter works with precanceling, so we do not set an http filter.
-															.AsFinalHandler(HttpErrorFilter.None())
-															);
+			services.AddFakeHttpClient()
+			.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddPolicyHandler(new RetryPolicy(3).WithErrorProcessorOf((_) => i++))
+														//No filter works with precanceling, so we do not set an http filter.
+														.AsFinalHandler(HttpErrorFilter.None())
+														);
 
-				var serviceProvider = services.BuildServiceProvider();
+			var serviceProvider = services.BuildServiceProvider();
 
-				using (var scope = serviceProvider.CreateScope())
-				{
-					var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
-					Assert.That(exception != null && exception.IsCanceled, Is.True);
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
+			Assert.That(exception != null && exception.IsCanceled, Is.True);
 
-					Assert.That(exception.ThrownByFinalHandler, Is.True);
-				}
-			}
+			Assert.That(exception.ThrownByFinalHandler, Is.True);
 		}
 	}
 }

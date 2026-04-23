@@ -29,27 +29,25 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
-				{
-					Assert.That(exception.IsErrorExpected, Is.False);
-					Assert.That(i, Is.EqualTo(0));
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
-				}
-				else
-				{
-					Assert.That(exception.IsErrorExpected, Is.True);
-					Assert.That(i, Is.EqualTo(3));
-					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
-				}
-				Assert.That(exception.FailedResponseData, Is.Null);
-				Assert.That(exception.ThrownByFinalHandler, Is.True);
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
+			{
+				Assert.That(exception.IsErrorExpected, Is.False);
+				Assert.That(i, Is.EqualTo(0));
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
 			}
+			else
+			{
+				Assert.That(exception.IsErrorExpected, Is.True);
+				Assert.That(i, Is.EqualTo(3));
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
+			}
+			Assert.That(exception.FailedResponseData, Is.Null);
+			Assert.That(exception.ThrownByFinalHandler, Is.True);
 		}
 
 		[Test]
@@ -75,14 +73,12 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var res = await sut.SendAsync(request);
-				Assert.That(res.StatusCode, Is.EqualTo(statusCode));
-			}
+			var res = await sut.SendAsync(request);
+			Assert.That(res.StatusCode, Is.EqualTo(statusCode));
 		}
 	}
 }
