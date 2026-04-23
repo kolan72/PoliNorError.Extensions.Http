@@ -14,7 +14,7 @@ namespace PoliNorError.Extensions.Http.Tests
 		[TestCase(false)]
 		public void Should_IHttpErrorsToHandle_For_TopHandler_PrecededBy_DelegatingHandler_That_Returns_BadStatusCode_Or_Throws_Exception_Handles_Correctly(bool isHttpStatusCode)
 		{
-			DelegatingHandler fakeHttpDelegatingHandler = null;
+			DelegatingHandler? fakeHttpDelegatingHandler = null;
 			if (isHttpStatusCode)
 			{
 				fakeHttpDelegatingHandler = new DelegatingHandlerThatReturnsBadStatusCode(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.GatewayTimeout)));
@@ -48,11 +48,11 @@ namespace PoliNorError.Extensions.Http.Tests
 
 				if (isHttpStatusCode)
 				{
-					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
+					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
 				}
 				else
 				{
-					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(ArgumentException)));
+					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
 				}
 			}
 		}

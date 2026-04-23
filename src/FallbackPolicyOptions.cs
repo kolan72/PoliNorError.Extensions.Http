@@ -1,17 +1,10 @@
-﻿using System;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace PoliNorError.Extensions.Http
+﻿namespace PoliNorError.Extensions.Http
 {
 	/// <summary>
 	/// Represents configuration options for a fallback-based policy. Inherits common
-	/// policy configuration settings from <see cref="PolicyOptions"/> and provides
-	/// additional settings to control fallback behavior.
+	/// policy configuration settings from <see cref="PolicyOptions"/> .
 	/// </summary>
-	public class FallbackPolicyOptions : PolicyOptions
-	{
-		public Func<CancellationToken, Task<HttpResponseMessage>> Fallback { get; set; }
-	}
+#pragma warning disable S2094 // Classes should not be empty
+	public class FallbackPolicyOptions : PolicyOptions{}
+#pragma warning restore S2094 // Classes should not be empty
 }

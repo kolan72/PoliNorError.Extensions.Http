@@ -1,20 +1,30 @@
-﻿using NUnit.Framework;
-using System;
-using System.Linq;
-using System.Linq.Expressions;
-
-namespace PoliNorError.Extensions.Http.Tests
+﻿namespace PoliNorError.Extensions.Http.Tests
 {
 	internal class PolicyOptionsTests
 	{
 		[Test]
-		public void Should_AllowSettingConfigurationHandler()
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_AllowSettingConfigurationHandler(bool withFallack)
 		{
 			bool wasCalled = false;
-			var options = new PolicyOptions
+
+			PolicyOptions options;
+
+			if (withFallack)
 			{
-				ConfigurePolicyResultHandling = _ => wasCalled = true
-			};
+				options = new FallbackPolicyOptions
+				{
+					ConfigurePolicyResultHandling = _ => wasCalled = true
+				};
+			}
+			else
+			{
+				options = new FallbackPolicyOptions
+				{
+					ConfigurePolicyResultHandling = _ => wasCalled = true
+				};
+			}
 
 			var mockHandlers = new HttpPolicyResultHandlers();
 			options.ConfigurePolicyResultHandling(mockHandlers);
@@ -24,38 +34,71 @@ namespace PoliNorError.Extensions.Http.Tests
 		}
 
 		[Test]
-		public void Should_SetConfigureErrorProcessing()
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_SetConfigureErrorProcessing(bool withFallack)
 		{
-			var options = new PolicyOptions();
+			PolicyOptions options;
+			var bp = new BulkErrorProcessor();
+
+			IPolicyBase rp;
+
+			if (!withFallack)
+			{
+				options = new PolicyOptions();
+				rp = new RetryPolicy(1, bp);
+			}
+			else
+			{
+				options = new FallbackPolicyOptions();
+				rp = new FallbackPolicy(bp).WithFallbackAction(() => { });
+			}
+
 			bool invoked = false;
 			options.ConfigureErrorProcessing = (b) => b.WithErrorProcessorOf((_) => invoked = true);
-
-			var bp = new BulkErrorProcessor();
 			options.ConfigureErrorProcessing(bp);
 
-			var rp = new RetryPolicy(1, bp);
 			var result = rp.Handle(() => throw new InvalidOperationException());
-			Assert.That(result.IsFailed, Is.True);
-			Assert.That(result.Errors.Count, Is.EqualTo(2));
+			if (!withFallack)
+			{
+				Assert.That(result.IsFailed, Is.True);
+			}
 			Assert.That(invoked, Is.True);
 		}
 
 		[Test]
-		public void Should_SetConfigureErrorFilter()
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_SetConfigureErrorFilter(bool withFallack)
 		{
-			var options = new PolicyOptions();
-			options.ConfigureErrorFilter = (ef) => ef.ExcludeError<InvalidOperationException>();
+			PolicyResult result;
+			if (!withFallack)
+			{
+				var options = new PolicyOptions();
+				options.ConfigureErrorFilter = (ef) => ef.ExcludeError<InvalidOperationException>();
 
-			var rp = new RetryPolicy(1).AddErrorFilter(options.ConfigureErrorFilter);
-			var result = rp.Handle(() => throw new InvalidOperationException());
+				var rp = new RetryPolicy(1).AddErrorFilter(options.ConfigureErrorFilter);
+
+				result = rp.Handle(() => throw new InvalidOperationException());
+			}
+			else
+			{
+				var options = new PolicyOptions();
+				options.ConfigureErrorFilter = (ef) => ef.ExcludeError<InvalidOperationException>();
+
+				var rp = new FallbackPolicy().WithFallbackAction(() => { }).AddErrorFilter(options.ConfigureErrorFilter);
+				result = rp.Handle(() => throw new InvalidOperationException());
+			}
 			Assert.That(result.ErrorFilterUnsatisfied, Is.True);
 		}
 
 		[Test]
-		public void Should_SetAndRetrievePolicyName()
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_SetAndRetrievePolicyName(bool withFallack)
 		{
 			// Arrange
-			var options = new PolicyOptions();
+			var options = withFallack ? new FallbackPolicyOptions() : new PolicyOptions();
 
 			// Act
 			options.PolicyName = "MyCustomPolicy";

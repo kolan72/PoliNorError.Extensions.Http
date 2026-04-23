@@ -44,7 +44,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				Assert.That(exception.PolicyResult.Errors.Count(), Is.EqualTo(4));
 				Assert.That(exception.PolicyResult.UnprocessedError.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
 
-				Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
+				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
 			}
 		}
 

@@ -1,13 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using NUnit.Framework;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PoliNorError.Extensions.Http.Tests
 {
@@ -20,7 +12,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			int retryCount = 3;
 
 			Assert.That(
-				() => storage.AddRetryHandler(retryCount, (RetryPolicyOptions)null),
+				() => storage.AddRetryHandler(retryCount, (RetryPolicyOptions?)null),
 				Throws.ArgumentNullException.With.Property("ParamName").EqualTo("options"));
 		}
 
@@ -47,15 +39,16 @@ namespace PoliNorError.Extensions.Http.Tests
 														.AddRetryHandler(3, emptyOptions)
 														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
 			}
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			using (Assert.EnterMultipleScope())
+			{
 				Assert.That(exception.IsErrorExpected, Is.True);
-				Assert.That(exception.InnermostPolicyResult.Errors.Count, Is.EqualTo(4));
+				Assert.That(exception.InnermostPolicyResult.Errors.Count(), Is.EqualTo(4));
 			}
 		}
 
@@ -92,13 +85,14 @@ namespace PoliNorError.Extensions.Http.Tests
 														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
 			}
 
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			using (Assert.EnterMultipleScope())
+			{
 				Assert.That(exception.IsErrorExpected, Is.True);
 				Assert.That(i, Is.EqualTo(3));
 			}
@@ -138,24 +132,28 @@ namespace PoliNorError.Extensions.Http.Tests
 														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()))
 				;
 
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				//By design — this happens because testPolicy generates an exception that doesn’t satisfy the filter.
-				Assert.That(exception.IsErrorExpected, Is.False);
-				if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			//By design — this happens because testPolicy generates an exception that doesn’t satisfy the filter.
+			Assert.That(exception.IsErrorExpected, Is.False);
+			if (errorType == DelegatingHandlerThatThrowsNotHttpException.ErrorType.InvalidOperation)
+			{
+				using (Assert.EnterMultipleScope())
 				{
-					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
+					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(InvalidOperationException)));
 					Assert.That(i, Is.EqualTo(3));
 				}
-				else
+			}
+			else
+			{
+				using (Assert.EnterMultipleScope())
 				{
-					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(ArgumentException)));
-					Assert.That(i, Is.EqualTo(0));
+					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(ArgumentException)));
+					Assert.That(i, Is.Zero);
 				}
 			}
 		}
@@ -196,21 +194,19 @@ namespace PoliNorError.Extensions.Http.Tests
 															.AsFinalHandler(HttpErrorFilter.None()))
 				.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
 
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				_  = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				if (shouldMatch)
-				{
-					Assert.That(m, Is.EqualTo(3));
-				}
-				else
-				{
-					Assert.That(m, Is.EqualTo(0));
-				}
+			_ = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			if (shouldMatch)
+			{
+				Assert.That(m, Is.EqualTo(3));
+			}
+			else
+			{
+				Assert.That(m, Is.Zero);
 			}
 		}
 
@@ -247,17 +243,15 @@ namespace PoliNorError.Extensions.Http.Tests
 																.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()))
 					.AddHttpMessageHandler(() => fakeHttpDelegatingHandler);
 			}
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				Assert.That(exception.IsErrorExpected, Is.EqualTo(exceptionExpected));
-			}
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			Assert.That(exception.IsErrorExpected, Is.EqualTo(exceptionExpected));
 
-			Func<IEmptyCatchBlockFilter, NonEmptyCatchBlockFilter> GetConfigureErrorFilter()
+			Func<IEmptyCatchBlockFilter, NonEmptyCatchBlockFilter>? GetConfigureErrorFilter()
 			{
 				if (exceptionExpected)
 				{
@@ -283,7 +277,7 @@ namespace PoliNorError.Extensions.Http.Tests
 		{
 			var invoked = false;
 
-			Action<IHttpPolicyResultHandlers> configure = null;
+			Action<IHttpPolicyResultHandlers> configure;
 
 			if (cancelable)
 			{
@@ -293,7 +287,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				}
 				else
 				{
-					configure = (handlers) => handlers.AddHandler(async (_, __) => { await Task.Delay(TimeSpan.FromTicks(1)); invoked = true; });
+					configure = (handlers) => handlers.AddHandler(async (_, __) => { await Task.Delay(TimeSpan.FromTicks(1), __); invoked = true; });
 				}
 			}
 			else
@@ -331,15 +325,13 @@ namespace PoliNorError.Extensions.Http.Tests
 															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
 			}
 
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				_ = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				Assert.That(invoked, Is.True);
-			}
+			_ = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			Assert.That(invoked, Is.True);
 		}
 
 		[Test]
@@ -376,16 +368,16 @@ namespace PoliNorError.Extensions.Http.Tests
 															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
 			}
 
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
 
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+
+			using (Assert.EnterMultipleScope())
 			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
-
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-
 				Assert.That(exception.InnermostPolicyResult.PolicyName, Is.EqualTo("outerName"));
 
 				Assert.That(exception.PolicyResult.PolicyName, Is.EqualTo("innerName"));
@@ -421,15 +413,13 @@ namespace PoliNorError.Extensions.Http.Tests
 														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
 			}
 
-			using (var serviceProvider = services.BuildServiceProvider())
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				_ = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
-				Assert.That(rd.AttemptsNumber, Is.EqualTo(3));
-			}
+			_ = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			Assert.That(rd.AttemptsNumber, Is.EqualTo(3));
 		}
 
 		[Test]
@@ -447,13 +437,14 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			var serviceProvider = services.BuildServiceProvider();
 
-			using (var scope = serviceProvider.CreateScope())
-			{
-				var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("httpclient-with-retryheader");
-				var request = new HttpRequestMessage(HttpMethod.Get, "http://any.localhost/any");
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("httpclient-with-retryheader");
+			var request = new HttpRequestMessage(HttpMethod.Get, "http://any.localhost/any");
 
-				var sw = Stopwatch.StartNew();
-				var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			var sw = Stopwatch.StartNew();
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+			using (Assert.EnterMultipleScope())
+			{
 				Assert.That(sw.Elapsed.Seconds, Is.GreaterThanOrEqualTo(1));
 				Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
 			}
@@ -464,42 +455,38 @@ namespace PoliNorError.Extensions.Http.Tests
 		[TestCase(false)]
 		public void Should_InfiniteRetryHandler_Be_Canceled_When_Canceled_In_ErrorProcessor(bool fromAction)
 		{
-			using (var cts = new CancellationTokenSource())
+			using var cts = new CancellationTokenSource();
+			void configure(IBulkErrorProcessor bp) => bp.WithErrorProcessorOf((_) => cts.Cancel());
+
+			var services = new ServiceCollection();
+
+			if (fromAction)
 			{
-				void configure(IBulkErrorProcessor bp) => bp.WithErrorProcessorOf((_) => cts.Cancel());
-
-				var services = new ServiceCollection();
-
-				if (fromAction)
-				{
-					services.AddFakeHttpClient()
-						.WithResiliencePipeline((empyConfig) => empyConfig
-															.AddInfiniteRetryHandler(opt => opt.ConfigureErrorProcessing = configure)
-															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
-				}
-				else
-				{
-					var options = new RetryPolicyOptions
-					{
-						ConfigureErrorProcessing = configure
-					};
-
-					services.AddFakeHttpClient()
-						.WithResiliencePipeline((empyConfig) => empyConfig
-															.AddInfiniteRetryHandler(options)
-															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
-				}
-
-				using (var serviceProvider = services.BuildServiceProvider())
-				using (var scope = serviceProvider.CreateScope())
-				{
-					var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
-
-					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
-					Assert.That(exception.IsCanceled, Is.True);
-				}
+				services.AddFakeHttpClient()
+					.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddInfiniteRetryHandler(opt => opt.ConfigureErrorProcessing = configure)
+														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
 			}
+			else
+			{
+				var options = new RetryPolicyOptions
+				{
+					ConfigureErrorProcessing = configure
+				};
+
+				services.AddFakeHttpClient()
+					.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddInfiniteRetryHandler(options)
+														.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+			}
+
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
+			Assert.That(exception.IsCanceled, Is.True);
 		}
 
 		[Test]
@@ -516,44 +503,47 @@ namespace PoliNorError.Extensions.Http.Tests
 			{
 				storage.AddInfiniteRetryHandler(new RetryPolicyOptions());
 			}
-			Assert.That(storage.AddedPolicies.FirstOrDefault(), Is.TypeOf(typeof(RetryPolicy)));
-			Assert.That(((RetryPolicy)storage.AddedPolicies.FirstOrDefault()).RetryInfo.IsInfinite, Is.True);
+
+			using (Assert.EnterMultipleScope())
+			{
+				Assert.That(storage.AddedPolicies.FirstOrDefault(), Is.TypeOf(typeof(RetryPolicy)));
+				Assert.That(((RetryPolicy?)storage.AddedPolicies.FirstOrDefault()!).RetryInfo.IsInfinite, Is.True);
+			}
 		}
 
 		[Test]
 		public void Should_Support_Fluent_Addition_Of_Infinite_And_LimitedRetryHandlers()
 		{
-			using (var cts = new CancellationTokenSource())
+			using var cts = new CancellationTokenSource();
+			cts.Cancel();
+			var services = new ServiceCollection();
+
+			services.AddFakeHttpClient()
+			.WithResiliencePipeline((empyConfig) => empyConfig
+														.AddRetryHandler(1, new RetryPolicyOptions())
+														.AddInfiniteRetryHandler(new RetryPolicyOptions())
+														//No filter works with precanceling, so we do not set an http filter.
+														.AsFinalHandler(HttpErrorFilter.None())
+														);
+
+			var serviceProvider = services.BuildServiceProvider();
+
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+			var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
+			using (Assert.EnterMultipleScope())
 			{
-				cts.Cancel();
-				var services = new ServiceCollection();
+				Assert.That(exception?.IsCanceled, Is.True);
 
-				services.AddFakeHttpClient()
-				.WithResiliencePipeline((empyConfig) => empyConfig
-															.AddRetryHandler(1, new RetryPolicyOptions())
-															.AddInfiniteRetryHandler(new RetryPolicyOptions())
-															//No filter works with precanceling, so we do not set an http filter.
-															.AsFinalHandler(HttpErrorFilter.None())
-															);
-
-				var serviceProvider = services.BuildServiceProvider();
-
-				using (var scope = serviceProvider.CreateScope())
-				{
-					var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
-
-					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
-					Assert.That(exception != null && exception.IsCanceled, Is.True);
-
-					Assert.That(exception.ThrownByFinalHandler, Is.False);
-				}
+				Assert.That(exception.ThrownByFinalHandler, Is.False);
 			}
 		}
 
 		private class FakeStorage : IPolicyHandlerStorage<FakeStorage>
 		{
-			public List<IPolicyBase> AddedPolicies { get; } = new List<IPolicyBase>();
+			public List<IPolicyBase> AddedPolicies { get; } = [];
 
 			public FakeStorage AddPolicyHandler<T>(T policy) where T : IWithErrorFilter<T>, IWithInnerErrorFilter<T>, IPolicyBase
 			{
@@ -561,7 +551,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				return this;
 			}
 
-			public FakeStorage AddPolicyHandler<T>(Func<IServiceProvider, T> policyFactory)
+			public FakeStorage AddPolicyHandler<T>(Func<IServiceProvider, T>? policyFactory)
 				where T : IWithErrorFilter<T>, IWithInnerErrorFilter<T>, IPolicyBase
 			{
 				throw new NotImplementedException();

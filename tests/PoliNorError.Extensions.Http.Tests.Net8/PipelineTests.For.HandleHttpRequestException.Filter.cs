@@ -112,7 +112,7 @@ namespace PoliNorError.Extensions.Http.Tests
 					Assert.That(i, Is.EqualTo(3));
 					Assert.That(exception.FailedResponseData, Is.Not.Null);
 					Assert.That(exception.ThrownByFinalHandler, Is.True);
-					Assert.That(exception.InnerException.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
+					Assert.That(exception.InnerException?.GetType(), Is.EqualTo(typeof(FailedHttpResponseException)));
 				}
 			}
 		}
@@ -154,7 +154,7 @@ namespace PoliNorError.Extensions.Http.Tests
 					Assert.That(res.IsErrorExpected, Is.False);
 					Assert.That(i, Is.EqualTo(0));
 				}
-				Assert.That(res.InnerException.GetType(), Is.EqualTo(typeof(HttpRequestException)));
+				Assert.That(res.InnerException?.GetType(), Is.EqualTo(typeof(HttpRequestException)));
 			}
 		}
 

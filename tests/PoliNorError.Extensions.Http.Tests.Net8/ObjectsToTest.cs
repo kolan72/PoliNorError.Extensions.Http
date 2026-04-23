@@ -28,13 +28,13 @@ namespace PoliNorError.Extensions.Http.Tests
 		public async Task<PolicyResult<T>> HandleAsync<T>(Func<CancellationToken, Task<T>> func, bool configureAwait = false, CancellationToken token = default)
 						=> await _simplePolicyProcessor.HandleAsync(func, configureAwait, token);
 
-		public PolicyWithNotFilterableError ExcludeError<TException1>(Func<TException1, bool> func = default) where TException1 : Exception => this;
+		public PolicyWithNotFilterableError ExcludeError<TException1>(Func<TException1, bool>? func = default) where TException1 : Exception => this;
 		public PolicyWithNotFilterableError ExcludeError(Expression<Func<Exception, bool>> expression) => this;
 
-		public PolicyWithNotFilterableError IncludeError<TException1>(Func<TException1, bool> func = default) where TException1 : Exception => this;
+		public PolicyWithNotFilterableError IncludeError<TException1>(Func<TException1, bool>? func = default) where TException1 : Exception => this;
 		public PolicyWithNotFilterableError IncludeError(Expression<Func<Exception, bool>> expression) => this;
-		public PolicyWithNotFilterableError IncludeInnerError<TInnerException>(Func<TInnerException, bool> predicate = null) where TInnerException : Exception => throw new NotImplementedException();
-		public PolicyWithNotFilterableError ExcludeInnerError<TInnerException>(Func<TInnerException, bool> predicate = null) where TInnerException : Exception => throw new NotImplementedException();
+		public PolicyWithNotFilterableError IncludeInnerError<TInnerException>(Func<TInnerException, bool>? predicate = null) where TInnerException : Exception => throw new NotImplementedException();
+		public PolicyWithNotFilterableError ExcludeInnerError<TInnerException>(Func<TInnerException, bool>? predicate = null) where TInnerException : Exception => throw new NotImplementedException();
 	}
 
 	internal class PolicyWithNotFilterableErrorProcessor: PolicyProcessor
@@ -60,17 +60,16 @@ namespace PoliNorError.Extensions.Http.Tests
 		public async Task<PolicyResult<T>> HandleAsync<T>(Func<CancellationToken, Task<T>> func, bool configureAwait = false, CancellationToken token = default)
 		{
 			return await _simplePolicyProcessor.ExcludeError(ex => ex.GetType() == _exceptionType).ExecuteAsync<T>(async(ct) => {
-				T result = default;
 				try
 				{
-					result = await func(ct).ConfigureAwait(configureAwait);
+					_ = await func(ct).ConfigureAwait(configureAwait);
 				}
 				catch (Exception)
 				{
 					_exceptionGenerator();
 				}
 				_exceptionGenerator();
-				return default;
+				return default!;
 			}, token) ;
 		}
 	}

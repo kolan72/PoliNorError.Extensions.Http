@@ -544,7 +544,7 @@ namespace PoliNorError.Extensions.Http.Tests
 					var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
 					var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request, cts.Token));
-					Assert.That(exception != null && exception.IsCanceled, Is.True);
+					Assert.That(exception?.IsCanceled == true, Is.True);
 
 					Assert.That(exception.ThrownByFinalHandler, Is.False);
 				}

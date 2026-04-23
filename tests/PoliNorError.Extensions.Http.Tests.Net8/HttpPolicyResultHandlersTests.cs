@@ -1,13 +1,4 @@
-﻿using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace PoliNorError.Extensions.Http.Tests
+﻿namespace PoliNorError.Extensions.Http.Tests
 {
 	internal class HttpPolicyResultHandlersTests
 	{
@@ -21,11 +12,9 @@ namespace PoliNorError.Extensions.Http.Tests
 			handlers.AddHandler((_, __) => invoked = true);
 			handlers.AttachTo(policy);
 
-			using (var failedHttpResponse = new HttpResponseMessage())
-			{
-				policy.Handle(() => failedHttpResponse);
-				Assert.That(invoked, Is.True);
-			}
+			using var failedHttpResponse = new HttpResponseMessage();
+			policy.Handle(() => failedHttpResponse);
+			Assert.That(invoked, Is.True);
 		}
 
 		[Test]
@@ -38,11 +27,9 @@ namespace PoliNorError.Extensions.Http.Tests
 			handlers.AddHandler((_) => invoked = true);
 			handlers.AttachTo(policy);
 
-			using (var failedHttpResponse = new HttpResponseMessage())
-			{
-				policy.Handle(() => failedHttpResponse);
-				Assert.That(invoked, Is.True);
-			}
+			using var failedHttpResponse = new HttpResponseMessage();
+			policy.Handle(() => failedHttpResponse);
+			Assert.That(invoked, Is.True);
 		}
 
 		[Test]
@@ -55,11 +42,9 @@ namespace PoliNorError.Extensions.Http.Tests
 			handlers.AddHandler((_, __) => { invoked = true; return Task.CompletedTask; });
 			handlers.AttachTo(policy);
 
-			using (var failedHttpResponse = new HttpResponseMessage())
-			{
-				policy.Handle(() => failedHttpResponse);
-				Assert.That(invoked, Is.True);
-			}
+			using var failedHttpResponse = new HttpResponseMessage();
+			policy.Handle(() => failedHttpResponse);
+			Assert.That(invoked, Is.True);
 		}
 
 		[Test]
@@ -69,14 +54,12 @@ namespace PoliNorError.Extensions.Http.Tests
 			var handlers = new HttpPolicyResultHandlers();
 			var policy = new RetryPolicy(1);
 
-			handlers.AddHandler(async (_, __) => { invoked = true; await Task.Delay(1); });
+			handlers.AddHandler(async (_, __) => { invoked = true; await Task.Delay(1, __); });
 			handlers.AttachTo(policy);
 
-			using (var failedHttpResponse = new HttpResponseMessage())
-			{
-				await policy.HandleAsync(async(__) => { await Task.Delay(1); return failedHttpResponse; });
-				Assert.That(invoked, Is.True);
-			}
+			using var failedHttpResponse = new HttpResponseMessage();
+			await policy.HandleAsync(async (__) => { await Task.Delay(1, __); return failedHttpResponse; });
+			Assert.That(invoked, Is.True);
 		}
 
 		[Test]
@@ -89,11 +72,9 @@ namespace PoliNorError.Extensions.Http.Tests
 			handlers.AddHandler((_) => { invoked = true; return Task.CompletedTask; });
 			handlers.AttachTo(policy);
 
-			using (var failedHttpResponse = new HttpResponseMessage())
-			{
-				policy.Handle(() => failedHttpResponse);
-				Assert.That(invoked, Is.True);
-			}
+			using var failedHttpResponse = new HttpResponseMessage();
+			policy.Handle(() => failedHttpResponse);
+			Assert.That(invoked, Is.True);
 		}
 
 		[Test]
@@ -106,11 +87,9 @@ namespace PoliNorError.Extensions.Http.Tests
 			handlers.AddHandler(async (_) => { invoked = true; await Task.Delay(1); });
 			handlers.AttachTo(policy);
 
-			using (var failedHttpResponse = new HttpResponseMessage())
-			{
-				await policy.HandleAsync(async (__) => { await Task.Delay(1); return failedHttpResponse; });
-				Assert.That(invoked, Is.True);
-			}
+			using var failedHttpResponse = new HttpResponseMessage();
+			await policy.HandleAsync(async (__) => { await Task.Delay(1, __); return failedHttpResponse; });
+			Assert.That(invoked, Is.True);
 		}
 
 		[Test]
@@ -120,7 +99,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			var handlers = new HttpPolicyResultHandlers();
 
 			// Act & Assert
-			Assert.That(() => handlers.AddHandler((Action<PolicyResult<HttpResponseMessage>, CancellationToken>)null),
+			Assert.That(() => handlers.AddHandler((Action<PolicyResult<HttpResponseMessage>, CancellationToken>?)null),
 				Throws.ArgumentNullException.With.Property("ParamName").EqualTo("syncHandler"));
 		}
 
@@ -131,7 +110,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			var handlers = new HttpPolicyResultHandlers();
 
 			// Act & Assert
-			Assert.That(() => handlers.AddHandler((Action<PolicyResult<HttpResponseMessage>>)null),
+			Assert.That(() => handlers.AddHandler((Action<PolicyResult<HttpResponseMessage>>?)null),
 				Throws.ArgumentNullException.With.Property("ParamName").EqualTo("syncHandler"));
 		}
 
@@ -142,7 +121,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			var handlers = new HttpPolicyResultHandlers();
 
 			// Act & Assert
-			Assert.That(() => handlers.AddHandler((Func<PolicyResult<HttpResponseMessage>, CancellationToken, Task>)null),
+			Assert.That(() => handlers.AddHandler((Func<PolicyResult<HttpResponseMessage>, CancellationToken, Task>?)null),
 				Throws.ArgumentNullException.With.Property("ParamName").EqualTo("asyncHandler"));
 		}
 
@@ -153,7 +132,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			var handlers = new HttpPolicyResultHandlers();
 
 			// Act & Assert
-			Assert.That(() => handlers.AddHandler((Func<PolicyResult<HttpResponseMessage>, Task>)null),
+			Assert.That(() => handlers.AddHandler((Func<PolicyResult<HttpResponseMessage>, Task>?)null),
 				Throws.ArgumentNullException.With.Property("ParamName").EqualTo("asyncHandler"));
 		}
 	}

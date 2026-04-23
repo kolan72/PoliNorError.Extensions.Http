@@ -1,8 +1,5 @@
-﻿using NUnit.Framework;
-using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Net.Http.Headers;
-using System.Net.Http;
 
 namespace PoliNorError.Extensions.Http.Tests
 {
@@ -12,12 +9,12 @@ namespace PoliNorError.Extensions.Http.Tests
 		public void Should_WithRetryAfterHeaderWait_Add_Error_Processor()
 		{
 			var rp = new RetryPolicy(1);
-			Stopwatch sw = null;
+			Stopwatch? sw = null;
 			TimeSpan elapsed = TimeSpan.Zero;
 			rp
 				.WithErrorProcessorOf((_) => sw = Stopwatch.StartNew())
 				.WithRetryAfterHeaderWait()
-				.WithErrorProcessorOf((_) => elapsed = sw.Elapsed);
+				.WithErrorProcessorOf((_) => elapsed = sw!.Elapsed);
 
 			var response = new HttpResponseMessage();
 			response.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromMilliseconds(9));
