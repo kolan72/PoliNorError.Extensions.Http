@@ -43,7 +43,7 @@ namespace PoliNorError.Extensions.Http
 			// ReSharper disable once UseNullPropagation
 			if (_curPipelinePolicyItem != null)
 			{
-				_curPipelinePolicyItem.CorrectFiler();
+				_curPipelinePolicyItem.CorrectFilter();
 			}
 #pragma warning restore RCS1146 // Use conditional access.
 		}
@@ -75,7 +75,7 @@ namespace PoliNorError.Extensions.Http
 				_policyFunc = (sp) => p(prevF(sp));
 			}
 
-			public void CorrectFiler()
+			public void CorrectFilter()
 			{
 				if (_hasIncludeError) return;
 				var prevF = _policyFunc;
