@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace PoliNorError.Extensions.Http
 {
-	public class Fallback
+	internal class Fallback
 	{
 		public Fallback(Func<CancellationToken, HttpResponseMessage> func)
 		{
