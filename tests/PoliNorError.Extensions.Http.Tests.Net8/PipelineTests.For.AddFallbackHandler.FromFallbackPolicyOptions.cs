@@ -97,56 +97,176 @@ namespace PoliNorError.Extensions.Http.Tests
         }
 
         [Test]
-        public void Should_InvokeConfigureErrorProcessing_When_AddFallbackHandlerCalledWithOptionsContainingConfigureErrorProcessing()
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Should_ConfigureErrorProcessing_WhenSetInFallbackOptions(bool fromAction)
         {
-            var builder = PipelineBuilder.Create();
-            var configureInvoked = false;
-            var options = new FallbackPolicyOptions
+            int invocations = 0;
+            void configure(IBulkErrorProcessor bp) => bp.WithErrorProcessorOf((_) => invocations++);
+
+            var services = new ServiceCollection();
+
+            if (fromAction)
             {
-                ConfigureErrorProcessing = _ => configureInvoked = true
-			};
+                services.AddFakeHttpClient()
+                    .WithResiliencePipeline((pipeline) => pipeline
+                        .AddFallbackHandler(AsyncFallbackResponse, (opt) => opt.ConfigureErrorProcessing = configure)
+                        .AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+            }
+            else
+            {
+                var options = new FallbackPolicyOptions
+                {
+                    ConfigureErrorProcessing = configure
+                };
 
-            builder.AddFallbackHandler(AsyncFallbackResponse, options);
+                services.AddFakeHttpClient()
+                    .WithResiliencePipeline((pipeline) => pipeline
+                        .AddFallbackHandler(AsyncFallbackResponse, options)
+                        .AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+            }
 
-            Assert.That(configureInvoked, Is.True);
+            using var serviceProvider = services.BuildServiceProvider();
+            using var scope = serviceProvider.CreateScope();
+            var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+            var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+            var response = sut.SendAsync(request).GetAwaiter().GetResult();
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.ServiceUnavailable));
+                Assert.That(invocations, Is.EqualTo(1));
+            }
         }
 
         [Test]
-        public void Should_InvokeConfigurePolicyResultHandling_When_AddFallbackHandlerCalledWithOptionsContainingConfigurePolicyResultHandling()
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Should_ConfigurePolicyResultHandling_WhenSetInOptions(bool fromAction)
         {
-            var builder = PipelineBuilder.Create();
-            var configureInvoked = false;
-            var options = new FallbackPolicyOptions
+            var invoked = false;
+            Action<IHttpPolicyResultHandlers> configure =
+                (handlers) => handlers.AddHandler((PolicyResult<HttpResponseMessage> _) => invoked = true);
+
+            var services = new ServiceCollection();
+
+            if (fromAction)
             {
-                ConfigurePolicyResultHandling = handlers =>
+                services.AddFakeHttpClient()
+                    .WithResiliencePipeline((pipeline) => pipeline
+                        .AddFallbackHandler(AsyncFallbackResponse, (opt) => opt.ConfigurePolicyResultHandling = configure)
+                        .AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+            }
+            else
+            {
+                var options = new FallbackPolicyOptions
                 {
-                    configureInvoked = true;
-                    handlers.AddHandler((PolicyResult<HttpResponseMessage> _) => { });
-                }
-            };
+                    ConfigurePolicyResultHandling = configure
+                };
 
-            builder.AddFallbackHandler(AsyncFallbackResponse, options);
+                services.AddFakeHttpClient()
+                    .WithResiliencePipeline((pipeline) => pipeline
+                        .AddFallbackHandler(AsyncFallbackResponse, options)
+                        .AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+            }
 
-            Assert.That(configureInvoked, Is.True);
+            using var serviceProvider = services.BuildServiceProvider();
+            using var scope = serviceProvider.CreateScope();
+            var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+            var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+            var response = sut.SendAsync(request).GetAwaiter().GetResult();
+
+            using (Assert.EnterMultipleScope())
+            {
+                Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.ServiceUnavailable));
+                Assert.That(invoked, Is.True);
+            }
         }
 
-        [Test]
-        public void Should_InvokeConfigureErrorFilter_When_AddFallbackHandlerCalledWithOptionsContainingConfigureErrorFilter()
+		[Test]
+		[TestCase(true)]
+		[TestCase(false)]
+		public void Should_ConfigurePolicyName_WhenSetInFallbackOptions(bool fromAction)
+		{
+            var capturedPolicyName = string.Empty;
+			void configure(IHttpPolicyResultHandlers handlers) => handlers.AddHandler((PolicyResult<HttpResponseMessage> pr) => capturedPolicyName = pr.PolicyName);
+
+			var services = new ServiceCollection();
+
+			if (!fromAction)
+			{
+				var outerPolicyOptions = new FallbackPolicyOptions
+				{
+					PolicyName = "outerName",
+                    ConfigurePolicyResultHandling = configure
+				};
+
+				services.AddFakeHttpClient()
+				.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddFallbackHandler(AsyncFallbackResponse, outerPolicyOptions)
+															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+			}
+			else
+			{
+				services.AddFakeHttpClient()
+				.WithResiliencePipeline((empyConfig) => empyConfig
+															.AddFallbackHandler(
+																AsyncFallbackResponse,
+																(outopt) => {
+																	outopt.PolicyName = "outerName";
+                                                                    outopt.ConfigurePolicyResultHandling = configure;
+																})
+															.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+			}
+
+			using var serviceProvider = services.BuildServiceProvider();
+			using var scope = serviceProvider.CreateScope();
+			var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+			var _ = sut.SendAsync(request).GetAwaiter().GetResult();
+
+			Assert.That(capturedPolicyName, Is.EqualTo("outerName"));
+		}
+
+		[Test]
+        [TestCase(true)]
+        [TestCase(false)]
+        public void Should_ConfigureErrorFilter_WhenSetInFallbackOptions(bool fromAction)
         {
-            var builder = PipelineBuilder.Create();
-            var configureInvoked = false;
-            var options = new FallbackPolicyOptions
+            var services = new ServiceCollection();
+
+            if (fromAction)
             {
-                ConfigureErrorFilter = filter =>
+                services.AddFakeHttpClient()
+                    .WithResiliencePipeline((pipeline) => pipeline
+                        .AddFallbackHandler(AsyncFallbackResponse,
+                            (opt) => opt.ConfigureErrorFilter = (ef) => ef.ExcludeError<HttpRequestException>())
+                        .AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+            }
+            else
+            {
+                var options = new FallbackPolicyOptions
                 {
-                    configureInvoked = true;
-                    return filter.IncludeError<HttpRequestException>();
-                }
-            };
+                    ConfigureErrorFilter = (ef) => ef.ExcludeError<HttpRequestException>()
+                };
 
-            builder.AddFallbackHandler(AsyncFallbackResponse, options);
+                services.AddFakeHttpClient()
+                    .WithResiliencePipeline((pipeline) => pipeline
+                        .AddFallbackHandler(AsyncFallbackResponse, options)
+                        .AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+            }
 
-            Assert.That(configureInvoked, Is.True);
+            using var serviceProvider = services.BuildServiceProvider();
+            using var scope = serviceProvider.CreateScope();
+            var sut = scope.ServiceProvider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+            var request = new HttpRequestMessage(HttpMethod.Get, "/any");
+
+            var exception = Assert.ThrowsAsync<HttpPolicyResultException>(async () => await sut.SendAsync(request));
+            Assert.That(exception.IsErrorExpected, Is.False);
         }
 
         [Test]
