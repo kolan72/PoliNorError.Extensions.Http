@@ -87,8 +87,10 @@ namespace PoliNorError.Extensions.Http
 						if (currentActivity != null)
 						{
 							_logger.LogInformation(
-								"HTTP request succeeded after {ElapsedMs}ms. Policy={PolicyType}, StatusCode={StatusCode}, TraceId={TraceId}, SpanId={SpanId}",
+								"HTTP request succeeded after {ElapsedMs}ms. Method={HttpMethod}, Url={HttpUrl}, Policy={PolicyType}, StatusCode={StatusCode}, TraceId={TraceId}, SpanId={SpanId}",
 								stopwatch.ElapsedMilliseconds,
+								request.Method.Method,
+								request.RequestUri?.ToString(),
 								_policy.GetType().Name,
 								(int)result.Result.StatusCode,
 								currentActivity.TraceId.ToString(),
@@ -97,8 +99,10 @@ namespace PoliNorError.Extensions.Http
 						else
 						{
 							_logger.LogInformation(
-								"HTTP request succeeded after {ElapsedMs}ms. Policy={PolicyType}, StatusCode={StatusCode}",
+								"HTTP request succeeded after {ElapsedMs}ms. Method={HttpMethod}, Url={HttpUrl}, Policy={PolicyType}, StatusCode={StatusCode}",
 								stopwatch.ElapsedMilliseconds,
+								request.Method.Method,
+								request.RequestUri?.ToString(),
 								_policy.GetType().Name,
 								(int)result.Result.StatusCode);
 						}
@@ -124,9 +128,11 @@ namespace PoliNorError.Extensions.Http
 					if (currentActivity != null)
 					{
 						_logger.LogWarning(
-							"HTTP request {ErrorType} after {ElapsedMs}ms. Policy={PolicyType}, IsFinalHandler={IsFinalHandler}, TraceId={TraceId}, SpanId={SpanId}",
+							"HTTP request {ErrorType} after {ElapsedMs}ms. Method={HttpMethod}, Url={HttpUrl}, Policy={PolicyType}, IsFinalHandler={IsFinalHandler}, TraceId={TraceId}, SpanId={SpanId}",
 							errorType,
 							stopwatch.ElapsedMilliseconds,
+							request.Method.Method,
+							request.RequestUri?.ToString(),
 							_policy.GetType().Name,
 							_isFinalHandler,
 							currentActivity.TraceId.ToString(),
@@ -135,9 +141,11 @@ namespace PoliNorError.Extensions.Http
 					else
 					{
 						_logger.LogWarning(
-							"HTTP request {ErrorType} after {ElapsedMs}ms. Policy={PolicyType}, IsFinalHandler={IsFinalHandler}",
+							"HTTP request {ErrorType} after {ElapsedMs}ms. Method={HttpMethod}, Url={HttpUrl}, Policy={PolicyType}, IsFinalHandler={IsFinalHandler}",
 							errorType,
 							stopwatch.ElapsedMilliseconds,
+							request.Method.Method,
+							request.RequestUri?.ToString(),
 							_policy.GetType().Name,
 							_isFinalHandler);
 					}
