@@ -10,6 +10,42 @@ using System.Diagnostics;
 
 namespace RetryFromOptions
 {
+	/// <summary>
+	/// Custom processor to dump Activity details to console for demonstration purposes.
+	/// </summary>
+	internal class ActivityDumpProcessor : BaseProcessor<Activity>
+	{
+		public override void OnEnd(Activity activity)
+		{
+			if (activity.Source.Name == "PoliNorError.Http")
+			{
+				Console.WriteLine();
+				Console.WriteLine("=== Activity Details ===");
+				Console.WriteLine($"Activity.TraceId:            {activity.TraceId}");
+				Console.WriteLine($"Activity.SpanId:             {activity.SpanId}");
+				Console.WriteLine($"Activity.ParentSpanId:       {activity.ParentSpanId}");
+				Console.WriteLine($"Activity.ActivitySourceName: {activity.Source.Name}");
+				Console.WriteLine($"Activity.DisplayName:        {activity.DisplayName}");
+				Console.WriteLine($"Activity.Kind:               {activity.Kind}");
+				Console.WriteLine($"Activity.StartTime:          {activity.StartTimeUtc:O}");
+				Console.WriteLine($"Activity.Duration:           {activity.Duration}");
+				Console.WriteLine($"Activity.Status:             {activity.Status}");
+				
+				if (activity.Tags != null && activity.Tags.Any())
+				{
+					Console.WriteLine("Activity.Tags:");
+					foreach (var tag in activity.Tags)
+					{
+						Console.WriteLine($"    {tag.Key}: {tag.Value}");
+					}
+				}
+				
+				Console.WriteLine("========================");
+				Console.WriteLine();
+			}
+		}
+	}
+
 	internal static class Program
 	{
 		private static async Task Main(string[] args)
@@ -44,6 +80,8 @@ namespace RetryFromOptions
 					.AddSource("PoliNorError.Http")
 					// Add standard HTTP client instrumentation
 					.AddHttpClientInstrumentation()
+					// Add custom processor to dump activity details to console
+					.AddProcessor(new ActivityDumpProcessor())
 					// Export traces to console with detailed output
 					.AddConsoleExporter(options =>
 					{
@@ -54,14 +92,10 @@ namespace RetryFromOptions
 
 			services.AddTransient<HandlerThatMakesTransientErrorFrom404>();
 
-			// Build the service provider first to initialize OpenTelemetry
-			var tempProvider = services.BuildServiceProvider();
-			var loggerFactory = tempProvider.GetRequiredService<ILoggerFactory>();
-
 			_ = services
 				.AddConfig()
 				.AddCatHttpClient()
-				// Enable telemetry by passing ILoggerFactory from service provider
+				// Enable telemetry - ILoggerFactory will be resolved from DI
 				.WithResiliencePipeline(
 					(emptyBuilder) =>
 					{
@@ -72,7 +106,7 @@ namespace RetryFromOptions
 								.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors());
 					},
 					// Pass ILoggerFactory to enable structured logging and telemetry
-					loggerFactory: loggerFactory
+					loggerFactory: null // Will be resolved from DI container
 				)
 				//This handler is used here to mimic service resiliency problems.
 				.AddHttpMessageHandler<HandlerThatMakesTransientErrorFrom404>();
@@ -84,17 +118,21 @@ namespace RetryFromOptions
 			Console.WriteLine("- Distributed Tracing: Enabled (ActivitySource: PoliNorError.Http)");
 			Console.WriteLine("- OpenTelemetry Export: Console (detailed mode)");
 			Console.WriteLine("- ActivityListener: Added (ensures activities are created)");
+			Console.WriteLine("- Custom Activity Dump: Enabled (shows all tags)");
 			Console.WriteLine();
 			Console.WriteLine("Watch for:");
 			Console.WriteLine("  [Information] HTTP request succeeded after Xms...");
 			Console.WriteLine("  [Warning] HTTP request Failed after Xms...");
-			Console.WriteLine("  TraceId and SpanId in log messages");
+			Console.WriteLine("  === Activity Details === (shows all tags)");
 			Console.WriteLine();
 
 			Thread.Sleep(1000);
 
 			await using (var provider = services.BuildServiceProvider())
 			{
+				// Force OpenTelemetry to initialize by resolving TracerProvider
+				var tracerProvider = provider.GetService<TracerProvider>();
+				
 				var service = provider.GetRequiredService<IAskCatService>();
 				await CatFactManager.GetCatFactOnRetry(service, loggerTest);
 			}

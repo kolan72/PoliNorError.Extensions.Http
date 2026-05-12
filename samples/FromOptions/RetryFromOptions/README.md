@@ -15,10 +15,10 @@ The sample enables structured logging by passing `ILoggerFactory` to the `WithRe
 ```
 
 **What you'll see:**
-- `[Information]` logs for successful HTTP requests with timing, **TraceId, and SpanId**
-- `[Warning]` logs for failed or canceled requests with **TraceId and SpanId**
+- `[Information]` logs for successful HTTP requests with **Method, URL, timing, TraceId, and SpanId**
+- `[Warning]` logs for failed or canceled requests with **Method, URL, TraceId and SpanId**
 - `[Error]` logs for unexpected exceptions with **TraceId and SpanId**
-- All logs include structured data: elapsed time, policy type, status codes, trace correlation IDs
+- All logs include structured data: HTTP method, URL, elapsed time, policy type, status codes, trace correlation IDs
 
 ### 2. Distributed Tracing (OpenTelemetry) ✅
 The sample configures OpenTelemetry to capture distributed traces:
@@ -71,7 +71,7 @@ Watch for:
   [Warning] HTTP request Failed after Xms...
   TraceId and SpanId in log messages
 
-[Information] HTTP request succeeded after 245ms. Policy=RetryPolicy, StatusCode=200, TraceId=abc123def456789..., SpanId=012ghi345jkl...
+[Information] HTTP request succeeded after 245ms. Method=GET, Url=https://catfact.ninja/fact, Policy=RetryPolicy, StatusCode=200, TraceId=abc123def456789..., SpanId=012ghi345jkl...
 
 Activity.TraceId:            abc123def456789...
 Activity.SpanId:             012ghi345jkl...
@@ -100,6 +100,7 @@ Resource associated with Activity:
 1. **Zero Overhead When Disabled**: If you remove the `loggerFactory` parameter, no logging occurs and there's no performance impact.
 
 2. **Rich Telemetry Data**: Each log and trace includes:
+   - **HTTP method and URL** for request identification
    - Elapsed time in milliseconds
    - Policy type being executed
    - HTTP status codes
