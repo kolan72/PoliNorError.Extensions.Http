@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace PoliNorError.Extensions.Http
 {
@@ -8,6 +9,14 @@ namespace PoliNorError.Extensions.Http
 	{
 		private readonly List<IPipelinePolicyItem> _pipelinePolicyItems = new List<IPipelinePolicyItem>();
 		private IPipelinePolicyItem _curPipelinePolicyItem;
+		private readonly ILoggerFactory _loggerFactory;
+
+		public IncompletePipelineBuilder() : this(null) { }
+
+		public IncompletePipelineBuilder(ILoggerFactory loggerFactory)
+		{
+			_loggerFactory = loggerFactory;
+		}
 
 		public IIncompletePipelineBuilder AddPolicyHandler<T>(T policy) where T : IWithErrorFilter<T>, IWithInnerErrorFilter<T>, IPolicyBase
 		{
@@ -34,18 +43,21 @@ namespace PoliNorError.Extensions.Http
 		public IPipelineBuilder AsFinalHandler(HttpErrorFilterCriteria errorsToHandle)
 		{
 			_curPipelinePolicyItem.AsFinalHandler(errorsToHandle);
-			return new PipelineBuilder(_pipelinePolicyItems.Select(pit => pit.PolicyFactory), _curPipelinePolicyItem, errorsToHandle);
+			return new PipelineBuilder(
+				_pipelinePolicyItems.Select(pit => pit.PolicyFactory), 
+				_curPipelinePolicyItem, 
+				errorsToHandle,
+				_loggerFactory);
 		}
 
 		private void CorrectPipelinePolicyItemFilter()
 		{
-#pragma warning disable RCS1146 // Use conditional access.
-			// ReSharper disable once UseNullPropagation
+			// Using null check instead of conditional access to ensure CorrectFilter executes
+			// This maintains builder state consistency before adding the next handler
 			if (_curPipelinePolicyItem != null)
 			{
 				_curPipelinePolicyItem.CorrectFilter();
 			}
-#pragma warning restore RCS1146 // Use conditional access.
 		}
 
 		internal interface IPipelinePolicyItem : IPipelinePolicyItemBase
