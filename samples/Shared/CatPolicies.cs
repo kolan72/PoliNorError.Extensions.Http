@@ -16,10 +16,6 @@ namespace Shared
 	/// Static policy factory class for Cat API HTTP client.
 	/// </summary>
 	/// <remarks>
-	/// This class is obsolete. Use dependency injection with IPolicyBuilder implementations instead.
-	/// See Shared.Policies namespace for policy builder examples.
-	/// </remarks>
-	[Obsolete("Use dependency injection with IPolicyBuilder<T> implementations instead. See Shared.Policies namespace for examples.")]
 	public static class CatPolicies
 	{
 		public static RetryPolicy GetFinalHandlerRetryPolicy(ILogger logger)
