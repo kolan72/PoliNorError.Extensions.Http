@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RetryFromOptions", "FromOpt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RetryWithDI", "WithDI\RetryWithDI\RetryWithDI.csproj", "{DE7030CF-CCF5-6057-1B9F-CACA4B6A5983}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PoliNorError.Extensions.Http", "..\src\PoliNorError.Extensions.Http.csproj", "{70D30DE8-0CB6-890B-6A98-026044E7219C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{DE7030CF-CCF5-6057-1B9F-CACA4B6A5983}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DE7030CF-CCF5-6057-1B9F-CACA4B6A5983}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DE7030CF-CCF5-6057-1B9F-CACA4B6A5983}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70D30DE8-0CB6-890B-6A98-026044E7219C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70D30DE8-0CB6-890B-6A98-026044E7219C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70D30DE8-0CB6-890B-6A98-026044E7219C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70D30DE8-0CB6-890B-6A98-026044E7219C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
