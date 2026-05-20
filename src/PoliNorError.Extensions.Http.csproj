@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.5" />
-    <PackageReference Include="PoliNorError" Version="2.24.20" />
+    <PackageReference Include="PoliNorError" Version="2.24.30" />
   </ItemGroup>
 
   <ItemGroup>
