@@ -2,44 +2,39 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 
 ## ⚡ Key Features
 
-* **Explicit resiliency pipeline** based on `DelegatingHandler`s
-
-* **Flexible policy creation**
-
-  * Inline policies
-  * Policies resolved from `IServiceProvider`
-  * Context-aware policy creation
-
-* **Powerful final-handler failure filtering**
-  Precisely control *which* HTTP responses and exceptions should be treated as failures:
-
-  * Transient HTTP errors (5xx, 408, 429)
-  * `HttpRequestException`
-  * Custom status codes or status code categories
-
-* **Full exception transparency**
-  Failures are surfaced via a single, rich exception:
-  `HttpPolicyResultException`, preserving:
-
-  * The original exception
-  * HTTP response details
-  * Policy execution results
-
-* **Control exception flow between handlers using `IncludeException<TException>`**
-
-* **Deep PoliNorError integration**
-  Use PoliNorError's fluent APIs for:
-
-  * Retry, fallback, and custom policies
-  * Exception filtering and processing
-  * Policy result inspection and logging
-
-* **Works with**
-
-  * Typed and named `HttpClient`
-  * `IHttpClientFactory`
-
-* **.NET Standard 2.0 compatible**  
+- **Explicit resiliency pipeline** based on `DelegatingHandler`s
+---
+- **Works with**
+	- Typed and named `HttpClient`
+  	- `IHttpClientFactory`
+---
+- **Flexible policy creation**
+	- Inline policies
+	- Policies resolved from `IServiceProvider`
+	- Context-aware policy creation
+---
+- **Powerful final-handler failure filtering**
+	- Precisely control *which* HTTP responses and exceptions should be treated as failures: 
+		- Transient HTTP errors (5xx, 408, 429)
+		- `HttpRequestException`
+		- Custom status codes or status code categories
+---
+- **Full exception transparency** 
+	- Failures are surfaced via a single, rich exception `HttpPolicyResultException`, preserving: 
+		- The original exception
+  		- HTTP response details
+    	- Policy execution results
+---
+- **Control exception flow between handlers using `IncludeException<TException>`**
+---
+- **Deep PoliNorError integration** 
+	- Use PoliNorError's fluent APIs for: 
+		- Retry, fallback, and custom policies
+  		- Exception filtering and processing
+  		- Policy result inspection and logging
+---
+ - **.NET Standard 2.0 compatible**  
+---
 
 ## 🔑 Key Concepts
 
@@ -244,20 +239,20 @@ Public properties of the `HttpPolicyResultException`:
 
 ## ❓ Why PoliNorError.Extensions.Http?
 
-* **Declarative pipeline builder for `HttpClient` via `WithResiliencePipeline`**
+- **Declarative pipeline builder for `HttpClient` via `WithResiliencePipeline`**
 
-* **First-class support for typed and named `HttpClient`**
+- **First-class support for typed and named `HttpClient`**
 
-* **You decide what a failure is**
-  - Filter transient HTTP errors in the flexible final handler and control exception flow between handlers.
+- **You decide what a failure is** 
+		- Filter transient HTTP errors in the flexible final handler and control exception flow between handlers.
 
-* **One clear failure signal**
-  - All handled failures surface as a single, information-rich `HttpPolicyResultException`.
+- **One clear failure signal** 
+		- All handled failures surface as a single, information-rich `HttpPolicyResultException`.
 
-* **Helpers to add handlers with rich configuration (`AddRetryHandler`, `AddFallbackHandler`)**
+- **Helpers to add handlers with rich configuration (`AddRetryHandler`, `AddFallbackHandler`)**
 
-* **First-class PoliNorError integration**
-  - Advanced error processing, contextual logging, and policy result inspection.
+- **First-class PoliNorError integration** 
+		- Advanced error processing, contextual logging, and policy result inspection.
 
 ##  Samples
 
