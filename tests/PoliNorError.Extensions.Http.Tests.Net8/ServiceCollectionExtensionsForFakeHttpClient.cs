@@ -3,6 +3,7 @@ using RichardSzalay.MockHttp;
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PoliNorError.Extensions.Http.Tests
@@ -11,7 +12,9 @@ namespace PoliNorError.Extensions.Http.Tests
 	{
 		public static IHttpClientBuilder AddFakeHttpClient(this ServiceCollection services)
 		{
-			return services.AddHttpClient("my-httpclient", client => client.BaseAddress = new Uri("http://any.localhost"));
+			services.AddTransient<FailingHandler>();
+			return services.AddHttpClient("my-httpclient", client => client.BaseAddress = new Uri("http://any.localhost"))
+				.ConfigurePrimaryHttpMessageHandler<FailingHandler>();
 		}
 
 		public static IHttpClientBuilder AddFakeHttpClientWithRetryHeader(this ServiceCollection services)
@@ -39,6 +42,18 @@ namespace PoliNorError.Extensions.Http.Tests
 				.Respond(System.Net.HttpStatusCode.OK, "application/json", "{'name' : 'Test McGee'}");
 
 			return services.AddHttpClient("my-httpclient").ConfigurePrimaryHttpMessageHandler(() => httpMessageHandlerMock);
+		}
+	}
+
+	/// <summary>
+	/// DelegatingHandler that always throws HttpRequestException - used for fast retry tests without real HTTP calls.
+	/// </summary>
+	internal class FailingHandler : DelegatingHandler
+	{
+		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+		{
+			await Task.Delay(1, cancellationToken);
+			throw new HttpRequestException("Simulated network failure");
 		}
 	}
 }

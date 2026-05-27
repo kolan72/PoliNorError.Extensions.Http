@@ -12,6 +12,10 @@ using System.Threading.Tasks;
 
 namespace Shared
 {
+	/// <summary>
+	/// Static policy factory class for Cat API HTTP client.
+	/// </summary>
+	/// <remarks>
 	public static class CatPolicies
 	{
 		public static RetryPolicy GetFinalHandlerRetryPolicy(ILogger logger)
