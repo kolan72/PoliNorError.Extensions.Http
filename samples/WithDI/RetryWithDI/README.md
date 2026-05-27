@@ -68,10 +68,8 @@ The sample will:
 1. Make HTTP requests to the Cat Facts API
 2. Apply retry policies when transient errors occur
 3. Log all retry attempts and policy results
-4. Display cat facts or fallback messages
+4. Display cat facts
 
 ## See Also
 
-- [Policy Builders Documentation](../../Shared/Policies/README.md)
 - [PoliNorError.Extensions.DependencyInjection](https://www.nuget.org/packages/PoliNorError.Extensions.DependencyInjection)
-- [Telemetry Documentation](../../../src/docs/Telemetry.md)
