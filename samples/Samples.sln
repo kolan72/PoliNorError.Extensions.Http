@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PoliNorError.Extensions.Htt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FallbackFromOptions", "FromOptions\FallbackFromOptions\FallbackFromOptions.csproj", "{042DC314-3704-A0A6-D038-64711C3ECCD2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RetryWithOptions", "WithDI\RetryWithOptions\RetryWithOptions.csproj", "{19449A5B-542C-8B9B-8692-5C03D428E995}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +53,10 @@ Global
 		{042DC314-3704-A0A6-D038-64711C3ECCD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{042DC314-3704-A0A6-D038-64711C3ECCD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{042DC314-3704-A0A6-D038-64711C3ECCD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{19449A5B-542C-8B9B-8692-5C03D428E995}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{19449A5B-542C-8B9B-8692-5C03D428E995}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{19449A5B-542C-8B9B-8692-5C03D428E995}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{19449A5B-542C-8B9B-8692-5C03D428E995}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
