@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
@@ -19,27 +20,67 @@ namespace PoliNorError.Extensions.Http
 
 		public static PolicyHttpMessageHandler CreateOuterHandler(IPolicyBase policy)
 		{
-			return new PolicyHttpMessageHandler { _policy = policy};
+			return new PolicyHttpMessageHandler { _policy = policy };
 		}
 
 		public static PolicyHttpMessageHandler CreateFinalHandler(IPolicyBase policy, HttpErrorFilterCriteria errorsToHandle)
 		{
-			return new PolicyHttpMessageHandler {_policy = policy, _errorsToHandle = errorsToHandle, _isFinalHandler = true };
+			return new PolicyHttpMessageHandler { _policy = policy, _errorsToHandle = errorsToHandle, _isFinalHandler = true };
 		}
 
 		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
-			var fn = ((Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>)SendCoreAsync).Apply(request);
-			var result = await _policy.HandleAsync(fn, cancellationToken).ConfigureAwait(false);
-			if (result.IsSuccess)
-				return result.Result;
-			if (result.IsFailed || result.IsCanceled)
+			// Create an Activity only when a listener is attached (zero-alloc no-op otherwise).
+			using (var activity = StartPipelineActivity())
 			{
-				throw new HttpPolicyResultException(result, _isFinalHandler);
+				var fn = ((Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>)SendCoreAsync).Apply(request);
+
+				var result = await _policy.HandleAsync(fn, cancellationToken).ConfigureAwait(false);
+
+				if (result.IsSuccess)
+				{
+					SetResultTag(activity, "success");
+					return result.Result;
+				}
+
+				if (result.IsFailed || result.IsCanceled)
+				{
+					SetResultTag(activity, result.IsCanceled ? "canceled" : "failed");
+					if (result.IsCanceled)
+						activity?.SetStatus(ActivityStatusCode.Error, "Operation canceled");
+					else
+						activity?.SetStatus(ActivityStatusCode.Error, result.UnprocessedError?.Message);
+
+					throw new HttpPolicyResultException(result, _isFinalHandler);
+				}
+				else
+				{
+					activity?.SetStatus(ActivityStatusCode.Error, "Unexpected policy result state");
+					throw new NotImplementedException();
+				}
 			}
-			else
+		}
+
+		private Activity StartPipelineActivity()
+		{
+			var activity = PipelineTelemetry.Source.StartActivity(
+				PipelineTelemetry.PipelineOperationName,
+				ActivityKind.Internal);
+
+			if (activity != null)
 			{
-				throw new NotImplementedException();
+				activity.SetTag("pipeline.is_final_handler", _isFinalHandler);
+				activity.SetTag("pipeline.policy.type", _policy?.GetType().Name ?? "Unknown");
+			}
+
+			return activity;
+		}
+
+		private static void SetResultTag(Activity activity, string result)
+		{
+			if (activity != null)
+			{
+				activity.SetTag("pipeline.result", result);
 			}
 		}
 
