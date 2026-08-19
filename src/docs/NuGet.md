@@ -227,7 +227,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 ```
 You can also configure `RetryPolicy` details inline using the `AddRetryHandler` overload that accepts an `Action<RetryPolicyOptions>`.
 
-## ?? OpenTelemetry Integration
+## 🌡️ OpenTelemetry Integration
 
 The library emits distributed-tracing activities via `System.Diagnostics.ActivitySource`. Each handler in the pipeline creates an `Activity` that records the policy execution result.
 
