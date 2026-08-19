@@ -51,11 +51,13 @@ namespace PoliNorError.Extensions.Http
 					else
 						activity?.SetStatus(ActivityStatusCode.Error, result.UnprocessedError?.Message);
 
+					DisposeOrphanedPreviousResponse(request);
 					throw new HttpPolicyResultException(result, _isFinalHandler);
 				}
 				else
 				{
 					activity?.SetStatus(ActivityStatusCode.Error, "Unexpected policy result state");
+					DisposeOrphanedPreviousResponse(request);
 					throw new NotImplementedException();
 				}
 			}
@@ -91,11 +93,7 @@ namespace PoliNorError.Extensions.Http
 				throw new ArgumentNullException(nameof(request));
 			}
 
-			if (request.Properties.TryGetValue(PreviousResponseKey, out var priorResult) && priorResult is IDisposable disposable)
-			{
-				request.Properties.Remove(PreviousResponseKey);
-				disposable.Dispose();
-			}
+			DisposeOrphanedPreviousResponse(request);
 
 			var result = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -103,6 +101,15 @@ namespace PoliNorError.Extensions.Http
 			if (!_isFinalHandler)
 				return result;
 			return await HttpResponseMessageToHandleByPolicyAdapter.AdaptAsync(result, _errorsToHandle).ConfigureAwait(false);
+		}
+
+		private static void DisposeOrphanedPreviousResponse(HttpRequestMessage request)
+		{
+			if (request.Properties.TryGetValue(PreviousResponseKey, out var priorResult) && priorResult is IDisposable disposable)
+			{
+				request.Properties.Remove(PreviousResponseKey);
+				disposable.Dispose();
+			}
 		}
 	}
 }
