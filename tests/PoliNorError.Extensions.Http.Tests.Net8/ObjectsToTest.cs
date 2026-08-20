@@ -89,4 +89,51 @@ namespace PoliNorError.Extensions.Http.Tests
 			};
 		}
 	}
+
+	internal class ThrowingPolicy : IPolicyBase,
+	IWithErrorFilter<ThrowingPolicy>, IWithInnerErrorFilter<ThrowingPolicy>
+	{
+		private readonly Exception _exceptionToThrow;
+
+		public ThrowingPolicy(Exception exceptionToThrow)
+		{
+			_exceptionToThrow = exceptionToThrow;
+		}
+
+		public IPolicyProcessor PolicyProcessor => null;
+
+		public string PolicyName => "ThrowingPolicy";
+
+		public PolicyResult Handle(Action action, CancellationToken token = default)
+			=> throw _exceptionToThrow;
+
+		public PolicyResult<T> Handle<T>(Func<T> func, CancellationToken token = default)
+			=> throw _exceptionToThrow;
+
+		public Task<PolicyResult> HandleAsync(Func<CancellationToken, Task> func,
+			bool configureAwait = false, CancellationToken token = default)
+			=> throw _exceptionToThrow;
+
+		public Task<PolicyResult<T>> HandleAsync<T>(Func<CancellationToken, Task<T>> func,
+			bool configureAwait = false, CancellationToken token = default)
+			=> throw _exceptionToThrow;
+
+		public ThrowingPolicy IncludeError<TException>(Func<TException, bool> func = null)
+			where TException : Exception => this;
+
+		public ThrowingPolicy IncludeError(System.Linq.Expressions.Expression<Func<Exception, bool>> expression)
+			=> this;
+
+		public ThrowingPolicy ExcludeError<TException>(Func<TException, bool> func = null)
+			where TException : Exception => this;
+
+		public ThrowingPolicy ExcludeError(System.Linq.Expressions.Expression<Func<Exception, bool>> expression)
+			=> this;
+
+		public ThrowingPolicy IncludeInnerError<TInnerException>(Func<TInnerException, bool> predicate = null)
+			where TInnerException : Exception => this;
+
+		public ThrowingPolicy ExcludeInnerError<TInnerException>(Func<TInnerException, bool> predicate = null)
+			where TInnerException : Exception => this;
+	}
 }

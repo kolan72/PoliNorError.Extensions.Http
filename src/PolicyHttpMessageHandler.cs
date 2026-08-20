@@ -30,35 +30,50 @@ namespace PoliNorError.Extensions.Http
 
 		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
-			// Create an Activity only when a listener is attached (zero-alloc no-op otherwise).
 			using (var activity = StartPipelineActivity())
 			{
-				var fn = ((Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>)SendCoreAsync).Apply(request);
-
-				var result = await _policy.HandleAsync(fn, cancellationToken).ConfigureAwait(false);
-
-				if (result.IsSuccess)
+				try
 				{
-					SetResultTag(activity, "success");
-					return result.Result;
-				}
+					var fn = ((Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>)SendCoreAsync).Apply(request);
 
-				if (result.IsFailed || result.IsCanceled)
-				{
-					SetResultTag(activity, result.IsCanceled ? "canceled" : "failed");
-					if (result.IsCanceled)
-						activity?.SetStatus(ActivityStatusCode.Error, "Operation canceled");
+					var result = await _policy.HandleAsync(fn, cancellationToken).ConfigureAwait(false);
+
+					if (result.IsSuccess)
+					{
+						SetResultTag(activity, "success");
+						return result.Result;
+					}
+
+					if (result.IsFailed || result.IsCanceled)
+					{
+						SetResultTag(activity, result.IsCanceled ? "canceled" : "failed");
+						if (result.IsCanceled)
+							activity?.SetStatus(ActivityStatusCode.Error, "Operation canceled");
+						else
+							activity?.SetStatus(ActivityStatusCode.Error, result.UnprocessedError?.Message);
+
+						DisposeOrphanedPreviousResponse(request);
+						throw new HttpPolicyResultException(result, _isFinalHandler);
+					}
 					else
-						activity?.SetStatus(ActivityStatusCode.Error, result.UnprocessedError?.Message);
-
-					DisposeOrphanedPreviousResponse(request);
-					throw new HttpPolicyResultException(result, _isFinalHandler);
+					{
+						activity?.SetStatus(ActivityStatusCode.Error, "Unexpected policy result state");
+						DisposeOrphanedPreviousResponse(request);
+						throw new NotImplementedException();
+					}
 				}
-				else
+				catch (Exception ex) when (!(ex is HttpPolicyResultException))
 				{
-					activity?.SetStatus(ActivityStatusCode.Error, "Unexpected policy result state");
+					// An unexpected exception escaped the policy (e.g., _policy.HandleAsync threw
+					// instead of returning a PolicyResult). Make the span authoritative: record the
+					// exception and mark it as errored so the trace reflects every failure mode.
+					// HttpPolicyResultException is excluded — its status is set explicitly above.
+					SetResultTag(activity, "faulted");
+					activity?.AddException(ex);
+					if (activity?.Status != ActivityStatusCode.Error)
+						activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 					DisposeOrphanedPreviousResponse(request);
-					throw new NotImplementedException();
+					throw;
 				}
 			}
 		}

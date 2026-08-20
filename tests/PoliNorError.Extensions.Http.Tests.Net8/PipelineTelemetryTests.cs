@@ -401,5 +401,60 @@ namespace PoliNorError.Extensions.Http.Tests
 			public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
 				=> new ValueTask();
 		}
+
+		// --- Uncaught-exception robustness ---------------------------------------
+
+		[Test]
+		public void Should_Mark_Activity_As_Error_And_Record_Exception_When_Policy_Throws()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddPolicyHandler(new ThrowingPolicy(new InvalidOperationException("Policy threw unexpectedly")))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			var thrown = Assert.ThrowsAsync<InvalidOperationException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			Assert.That(thrown.Message, Is.EqualTo("Policy threw unexpectedly"));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
+			Assert.That(pipelineActivity.GetTagItem("pipeline.result"), Is.EqualTo("faulted"));
+
+			var exceptionEvent = pipelineActivity.Events.FirstOrDefault(e => e.Name == "exception");
+			Assert.That(exceptionEvent.Tags.FirstOrDefault(t => t.Key == "exception.type").Value,
+				Is.EqualTo("System.InvalidOperationException"));
+			Assert.That(exceptionEvent.Tags.FirstOrDefault(t => t.Key == "exception.message").Value,
+				Is.EqualTo("Policy threw unexpectedly"));
+		}
+
+		[Test]
+		public void Should_Propagate_Policy_Exception_Even_When_No_Listener_Attached()
+		{
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddPolicyHandler(new ThrowingPolicy(new InvalidOperationException("No listener")))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			var thrown = Assert.ThrowsAsync<InvalidOperationException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			Assert.That(thrown.Message, Is.EqualTo("No listener"));
+		}
+
 	}
 }
