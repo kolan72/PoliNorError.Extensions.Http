@@ -1,4 +1,4 @@
-The library provides an outgoing request resiliency pipeline for `HttpClient`, using policies from the [PoliNorError](https://github.com/kolan72/PoliNorError) library.
+﻿The library provides an outgoing request resiliency pipeline for `HttpClient`, using policies from the [PoliNorError](https://github.com/kolan72/PoliNorError) library.
 
 ## ⚡ Key Features
 
@@ -32,6 +32,11 @@ The library provides an outgoing request resiliency pipeline for `HttpClient`, u
 		- Retry, fallback, and custom policies
   		- Exception filtering and processing
   		- Policy result inspection and logging
+---
+- **OpenTelemetry integration**
+	- Built-in distributed tracing via `System.Diagnostics.ActivitySource`
+	- Zero-cost when no listener is attached
+	- Tags: `pipeline.result`, `pipeline.policy.type`, `pipeline.is_final_handler`
 ---
  - **.NET Standard 2.0 compatible**  
 ---
@@ -222,13 +227,32 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 ```
 You can also configure `RetryPolicy` details inline using the `AddRetryHandler` overload that accepts an `Action<RetryPolicyOptions>`.
 
+## 🌡️ OpenTelemetry Integration
+
+The library emits distributed-tracing activities via `System.Diagnostics.ActivitySource`. Each handler in the pipeline creates an `Activity` that records the policy execution result.
+
+**Activity tags:**
+- `pipeline.result` — `"success"`, `"failed"`, or `"canceled"`
+- `pipeline.policy.type` — PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`)
+- `pipeline.is_final_handler` — `true` if this handler is the final (response-classifying) handler
+
+**Connecting to OpenTelemetry:**
+```csharp
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource("PoliNorError.Extensions.Http")
+    .AddOtlpExporter()   // or AddConsoleExporter(), AddZipkinExporter(), etc.
+    .Build();
+```
+
+No additional configuration is needed in the pipeline itself. The `ActivitySource` is zero-cost when no listener is attached.
+
 ## 📜 `HttpPolicyResultException` properties
 
 Public properties of the `HttpPolicyResultException`:
 
 - `InnerException` 
-	- If the response status code matches the handling filter’s status code, it will be a special `FailedHttpResponseException`.  
-	- If no handlers inside or outside the resiliency pipeline throw an exception, and the `HttpClient`’s primary handler throws an `HttpRequestException`, the `InnerException` will be that `HttpRequestException`.
+	- If the response status code matches the handling filter's status code, it will be a special `FailedHttpResponseException`.  
+	- If no handlers inside or outside the resiliency pipeline throw an exception, and the `HttpClient`'s primary handler throws an `HttpRequestException`, the `InnerException` will be that `HttpRequestException`.
 	- Otherwise, the exception originates from one of the handlers, either inside or outside the resiliency pipeline.
 - `FailedResponseData` - not null if the status code part of the handling filter matches the response status code.
 - `HasFailedResponse` - true if `FailedResponseData` is not null.
@@ -253,6 +277,9 @@ Public properties of the `HttpPolicyResultException`:
 
 - **First-class PoliNorError integration** 
 		- Advanced error processing, contextual logging, and policy result inspection.
+
+- **Built-in OpenTelemetry tracing**
+		- Observe retry/fallback behavior in your distributed tracing backend with zero pipeline configuration.
 
 ##  Samples
 

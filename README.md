@@ -1,4 +1,4 @@
-# PoliNorError.Extensions.Http
+﻿# PoliNorError.Extensions.Http
 
 The library provides an outgoing request resiliency pipeline for `HttpClient`, using policies from the [PoliNorError](https://github.com/kolan72/PoliNorError) library.
 
@@ -46,6 +46,15 @@ Failures are surfaced via a single, rich exception `HttpPolicyResultException`, 
 	- Retry, fallback, and custom policies
   	- Exception filtering and processing
   	- Policy result inspection and logging
+
+**OpenTelemetry integration**  
+
+Built-in distributed tracing via `System.Diagnostics.ActivitySource`:
+
+	- Zero-cost when no listener is attached (no allocations)
+	- Emits `Activity` per handler in the pipeline
+	- Tags: `pipeline.result`, `pipeline.policy.type`, `pipeline.is_final_handler`
+	- Works with any OTLP-compatible backend (Jaeger, Zipkin, Grafana, Datadog, etc.)
 
  **.NET Standard 2.0 compatible**  
 
@@ -118,7 +127,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 		pb
 		...
 		.AddPolicyHandler(PolicyForFinalHandler)
-		// ✔ Adds transient http errors to the response handling filter.
+		// ? Adds transient http errors to the response handling filter.
 		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
 		...
 	)
@@ -127,7 +136,7 @@ and/or any non-successful status codes or categories
 ```csharp
 		...
 		.AsFinalHandler(HttpErrorFilter.HandleHttpRequestException()
-			// ✔ Also adds 5XX status codes to the response handling filter.
+			// ? Also adds 5XX status codes to the response handling filter.
 			.OrServerError())
 		...
 
@@ -136,7 +145,7 @@ Use `IncludeException<TException>` on the pipeline builder to allow an outer han
 ```csharp
 		...
 		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
-		// ✔ Include 'SomeExceptionFromNonPipelineHandler' exceptions in the filter 
+		// ? Include 'SomeExceptionFromNonPipelineHandler' exceptions in the filter 
 		//when thrown by a non-pipeline handler (in this case).
 		.IncludeException<SomeExceptionFromNonPipelineHandler>()
 		...
@@ -159,7 +168,7 @@ catch (OperationCanceledException oe)
 }
 catch (HttpPolicyResultException hpre)
 {
-	// ✔ If the response status code matches the handling filter status code:
+	// ? If the response status code matches the handling filter status code:
 	if (hpre.HasFailedResponse)
 	{
 		//For example, log a failed status code.
@@ -240,13 +249,69 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 ```
 You can also configure `RetryPolicy` details inline using the `AddRetryHandler` overload that accepts an `Action<RetryPolicyOptions>`.
 
+## 🌡️ OpenTelemetry Integration
+
+The library emits distributed-tracing activities via `System.Diagnostics.ActivitySource`. Each `DelegatingHandler` in the pipeline creates an `Activity` that records the policy execution result.
+
+### Activity tags
+
+| Tag | Description |
+|-----|-------------|
+| `pipeline.result` | `"success"`, `"failed"`, or `"canceled"` |
+| `pipeline.policy.type` | PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`) |
+| `pipeline.is_final_handler` | `true` if this handler is the final (response-classifying) handler |
+
+### Connecting to OpenTelemetry
+
+Subscribe to the `PoliNorError.Extensions.Http` activity source in your `TracerProvider` configuration:
+
+```csharp
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource("PoliNorError.Extensions.Http")
+    .AddConsoleExporter()   // or AddOtlpExporter(), AddZipkinExporter(), etc.
+    .Build();
+```
+
+No additional configuration is needed in the pipeline itself. The `ActivitySource` is zero-cost when no listener is attached.
+
+### Example: Full setup
+
+```csharp
+using OpenTelemetry;
+using OpenTelemetry.Trace;
+
+// Configure OpenTelemetry
+using var tracerProvider = Sdk.CreateTracerProviderBuilder()
+    .AddSource("PoliNorError.Extensions.Http")
+    .AddSource("System.Net.Http")
+    .AddOtlpExporter()
+    .Build();
+
+// Configure the resilience pipeline
+services.AddHttpClient("api")
+    .WithResiliencePipeline(pb =>
+        pb
+            .AddRetryHandler(new RetryPolicy(3))
+            .AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+```
+
+Every request through this `HttpClient` will now emit a trace span with retry/fallback details.
+
+### Verifying with the sample app
+
+Run the `samples/Observability` console app to see activities printed to stdout:
+
+```bash
+dotnet run --project samples/Observability
+```
+
 ## 📜 `HttpPolicyResultException` properties
 
 Public properties of the `HttpPolicyResultException`:
 
 - `InnerException` 
-	- If the response status code matches the handling filter’s status code, it will be a special `FailedHttpResponseException`.  
-	- If no handlers inside or outside the resiliency pipeline throw an exception, and the `HttpClient`’s primary handler throws an `HttpRequestException`, the `InnerException` will be that `HttpRequestException`.
+	- If the response status code matches the handling filter's status code, it will be a special `FailedHttpResponseException`.  
+	- If no handlers inside or outside the resiliency pipeline throw an exception, and the `HttpClient`'s primary handler throws an `HttpRequestException`, the `InnerException` will be that `HttpRequestException`.
 	- Otherwise, the exception originates from one of the handlers, either inside or outside the resiliency pipeline.
 - `FailedResponseData` - not null if the status code part of the handling filter matches the response status code.
 - `HasFailedResponse` - true if `FailedResponseData` is not null.
@@ -281,6 +346,9 @@ When a request fails after exhausting all policies, this exception contains seve
 **First-class PoliNorError integration**  
 - Advanced error processing, contextual logging, and policy result inspection.
 
+**Built-in OpenTelemetry tracing**  
+- Observe retry/fallback behavior in your distributed tracing backend with zero pipeline configuration.
+
 ## 🐈 Samples [![CSharp](https://img.shields.io/badge/C%23-code-blue.svg)](samples/Intro)
 
 See the [/samples](samples/Intro) folder for concrete examples.
@@ -301,4 +369,3 @@ https://www.milanjovanovic.tech/blog/extending-httpclient-with-delegating-handle
 
 Josef Ottosson. Testing your Polly policies :  
 https://josef.codes/testing-your-polly-policies/  
-
