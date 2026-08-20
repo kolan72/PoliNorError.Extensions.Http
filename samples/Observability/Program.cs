@@ -67,7 +67,7 @@ try
     var clientC = factory.CreateClient("demo");
     await clientC.GetAsync("200", cts.Token);
 }
-catch (OperationCanceledException)
+catch (HttpPolicyResultException ex) when (ex.IsCanceled)
 {
     Console.WriteLine("  Result: OperationCanceledException\n");
 }
