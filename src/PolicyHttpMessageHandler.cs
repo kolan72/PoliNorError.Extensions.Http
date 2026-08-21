@@ -41,6 +41,7 @@ namespace PoliNorError.Extensions.Http
 					if (result.IsSuccess)
 					{
 						SetResultTag(activity, "success");
+						activity?.SetStatus(ActivityStatusCode.Ok);
 						return result.Result;
 					}
 
@@ -67,7 +68,7 @@ namespace PoliNorError.Extensions.Http
 					// An unexpected exception escaped the policy (e.g., _policy.HandleAsync threw
 					// instead of returning a PolicyResult). Make the span authoritative: record the
 					// exception and mark it as errored so the trace reflects every failure mode.
-					// HttpPolicyResultException is excluded — its status is set explicitly above.
+					// HttpPolicyResultException is excluded - its status is set explicitly above.
 					SetResultTag(activity, "faulted");
 					activity?.AddException(ex);
 					if (activity?.Status != ActivityStatusCode.Error)
