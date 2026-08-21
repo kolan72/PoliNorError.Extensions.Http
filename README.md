@@ -257,9 +257,9 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 
 | Tag | Description |
 |-----|-------------|
-| `pipeline.result` | `"success"`, `"failed"`, or `"canceled"` |
-| `pipeline.policy.type` | PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`) |
-| `pipeline.is_final_handler` | `true` if this handler is the final (response-classifying) handler |
+| `polinorerror.pipeline.result` | `"success"`, `"failed"`, or `"canceled"` |
+| `polinorerror.pipeline.policy.type` | PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`) |
+| `polinorerror.pipeline.is_final_handler` | `true` if this handler is the final (response-classifying) handler |
 
 ### Connecting to OpenTelemetry
 
