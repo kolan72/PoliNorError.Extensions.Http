@@ -27,7 +27,7 @@ namespace PoliNorError.Extensions.Http
 		/// The <see cref="ActivitySource"/> used to create activities for pipeline execution.
 		/// This is safe to use statically - when no listener is attached, all operations are no-alloc no-ops.
 		/// </summary>
-		public static readonly ActivitySource Source = new ActivitySource(SourceName);
+		public static readonly ActivitySource Source = new ActivitySource(SourceName, typeof(PipelineTelemetry).Assembly.GetName().Version?.ToString());
 
 		/// <summary>
 		/// The operation name for the top-level pipeline Activity.

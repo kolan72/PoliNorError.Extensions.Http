@@ -457,5 +457,44 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(thrown.Message, Is.EqualTo("No listener"));
 		}
 
+		// --- PipelineTelemetry.Source metadata --------------------------
+
+		[Test]
+		public void Source_Should_Not_Be_Null()
+		{
+			Assert.That(PipelineTelemetry.Source, Is.Not.Null);
+		}
+
+		[Test]
+		public void Source_Should_Have_Expected_Name()
+		{
+			Assert.That(PipelineTelemetry.Source.Name, Is.EqualTo(PipelineTelemetry.SourceName));
+		}
+
+		[Test]
+		public void Source_Should_Have_AssemblyVersion()
+		{
+			var expectedVersion = typeof(PipelineTelemetry).Assembly.GetName().Version?.ToString();
+			Assert.That(PipelineTelemetry.Source.Version, Is.EqualTo(expectedVersion));
+		}
+
+		[Test]
+		public void Started_Activity_Should_Carry_Source_Name()
+		{
+			Activity? captured = null;
+			using var listener = new ActivityListener
+			{
+				ShouldListenTo = s => s.Name == PipelineTelemetry.SourceName,
+				Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+				ActivityStarted = a => captured = a
+			};
+			ActivitySource.AddActivityListener(listener);
+
+			using var activity = PipelineTelemetry.Source.StartActivity("test");
+			Assert.That(activity, Is.Not.Null);
+			Assert.That(captured, Is.Not.Null);
+			Assert.That(captured!.Source.Name, Is.EqualTo(PipelineTelemetry.SourceName));
+		}
+
 	}
 }
