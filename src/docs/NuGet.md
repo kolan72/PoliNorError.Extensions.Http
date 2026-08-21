@@ -232,7 +232,7 @@ You can also configure `RetryPolicy` details inline using the `AddRetryHandler` 
 The library emits distributed-tracing activities via `System.Diagnostics.ActivitySource`. Each handler in the pipeline creates an `Activity` that records the policy execution result.
 
 **Activity tags:**
-- `polinorerror.pipeline.result` — `"success"`, `"failed"`, or `"canceled"`
+- `polinorerror.pipeline.result` — `"success"` (policy succeeded), `"failed"` (policy returned a failed result), `"canceled"` (operation was canceled), or `"faulted"` (unexpected exception escaped the policy)
 - `polinorerror.pipeline.policy.type` — PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`)
 - `polinorerror.pipeline.is_final_handler` — `true` if this handler is the final (response-classifying) handler
 

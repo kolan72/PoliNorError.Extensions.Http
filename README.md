@@ -257,7 +257,7 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 
 | Tag | Description |
 |-----|-------------|
-| `polinorerror.pipeline.result` | `"success"`, `"failed"`, or `"canceled"` |
+| `polinorerror.pipeline.result` | Policy execution result: `"success"` (policy succeeded), `"failed"` (policy returned a failed result), `"canceled"` (operation was canceled), or `"faulted"` (unexpected exception escaped the policy) |
 | `polinorerror.pipeline.policy.type` | PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`) |
 | `polinorerror.pipeline.is_final_handler` | `true` if this handler is the final (response-classifying) handler |
 
