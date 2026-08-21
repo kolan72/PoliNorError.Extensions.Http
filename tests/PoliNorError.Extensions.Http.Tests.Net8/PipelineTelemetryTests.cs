@@ -193,6 +193,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				.Find(a => string.Equals(a.GetTagItem("polinorerror.pipeline.policy.type") as string, "FallbackPolicy"));
 			Assert.That(fallbackActivity, Is.Not.Null);
 			Assert.That(fallbackActivity!.GetTagItem("polinorerror.pipeline.result"), Is.EqualTo("success"));
+			Assert.That(fallbackActivity.Status, Is.EqualTo(ActivityStatusCode.Ok));
 		}
 
 		// --- Policy type tag -------------------------------------------
