@@ -96,8 +96,8 @@ namespace PoliNorError.Extensions.Http.Tests
 			var pipelineActivity = activities
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 			Assert.That(pipelineActivity, Is.Not.Null);
-			Assert.That(pipelineActivity!.GetTagItem("pipeline.result"), Is.EqualTo("success"));
-			Assert.That(pipelineActivity.GetTagItem("pipeline.is_final_handler"), Is.EqualTo(true));
+			Assert.That(pipelineActivity!.GetTagItem("polinorerror.pipeline.result"), Is.EqualTo("success"));
+			Assert.That(pipelineActivity.GetTagItem("polinorerror.pipeline.is_final_handler"), Is.EqualTo(true));
 		}
 
 		// --- Retry failure path ----------------------------------------
@@ -123,8 +123,8 @@ namespace PoliNorError.Extensions.Http.Tests
 			var pipelineActivity = activities
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 			Assert.That(pipelineActivity, Is.Not.Null);
-			Assert.That(pipelineActivity!.GetTagItem("pipeline.result"), Is.EqualTo("failed"));
-			Assert.That(pipelineActivity.GetTagItem("pipeline.policy.type"), Is.EqualTo("RetryPolicy"));
+			Assert.That(pipelineActivity!.GetTagItem("polinorerror.pipeline.result"), Is.EqualTo("failed"));
+			Assert.That(pipelineActivity.GetTagItem("polinorerror.pipeline.policy.type"), Is.EqualTo("RetryPolicy"));
 			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
 		}
 
@@ -156,7 +156,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			var pipelineActivity = activities
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 			Assert.That(pipelineActivity, Is.Not.Null);
-			Assert.That(pipelineActivity!.GetTagItem("pipeline.result"), Is.EqualTo("canceled"));
+			Assert.That(pipelineActivity!.GetTagItem("polinorerror.pipeline.result"), Is.EqualTo("canceled"));
 			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
 		}
 
@@ -190,9 +190,9 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivities, Is.Not.Empty);
 
 			var fallbackActivity = pipelineActivities
-				.Find(a => string.Equals(a.GetTagItem("pipeline.policy.type") as string, "FallbackPolicy"));
+				.Find(a => string.Equals(a.GetTagItem("polinorerror.pipeline.policy.type") as string, "FallbackPolicy"));
 			Assert.That(fallbackActivity, Is.Not.Null);
-			Assert.That(fallbackActivity!.GetTagItem("pipeline.result"), Is.EqualTo("success"));
+			Assert.That(fallbackActivity!.GetTagItem("polinorerror.pipeline.result"), Is.EqualTo("success"));
 		}
 
 		// --- Policy type tag -------------------------------------------
@@ -219,7 +219,7 @@ namespace PoliNorError.Extensions.Http.Tests
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 
 			Assert.That(pipelineActivity, Is.Not.Null);
-			Assert.That(pipelineActivity!.GetTagItem("pipeline.policy.type"), Is.EqualTo("RetryPolicy"));
+			Assert.That(pipelineActivity!.GetTagItem("polinorerror.pipeline.policy.type"), Is.EqualTo("RetryPolicy"));
 		}
 
 		// --- No-op when no listener ------------------------------------
@@ -270,7 +270,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivities.Count, Is.GreaterThanOrEqualTo(2));
 
 			// Each activity must be tagged with our library's policy type
-			Assert.That(pipelineActivities.TrueForAll(a => a.GetTagItem("pipeline.policy.type") != null), Is.True);
+			Assert.That(pipelineActivities.TrueForAll(a => a.GetTagItem("polinorerror.pipeline.policy.type") != null), Is.True);
 		}
 
 		// --- Failed response data preserved ----------------------------
@@ -429,7 +429,7 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			Assert.That(pipelineActivity, Is.Not.Null);
 			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
-			Assert.That(pipelineActivity.GetTagItem("pipeline.result"), Is.EqualTo("faulted"));
+			Assert.That(pipelineActivity.GetTagItem("polinorerror.pipeline.result"), Is.EqualTo("faulted"));
 
 			var exceptionEvent = pipelineActivity.Events.FirstOrDefault(e => e.Name == "exception");
 			Assert.That(exceptionEvent.Tags.FirstOrDefault(t => t.Key == "exception.type").Value,

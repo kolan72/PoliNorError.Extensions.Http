@@ -10,9 +10,9 @@ namespace PoliNorError.Extensions.Http
 	/// <remarks>
 	/// Activity tags emitted by this library:
 	/// <list type="bullet">
-	///   <item><c>pipeline.result</c>: <c>"success"</c>, <c>"failed"</c>, or <c>"canceled"</c></item>
-	///   <item><c>pipeline.is_final_handler</c>: <c>true</c> if this handler is the final (response-classifying) handler</item>
-	///   <item><c>pipeline.policy.type</c>: short name of the PoliNorError policy type (e.g. <c>"RetryPolicy"</c>, <c>"FallbackPolicy"</c>)</item>
+  ///   <item><c>polinorerror.pipeline.result</c>: <c>"success"</c>, <c>"failed"</c>, or <c>"canceled"</c></item>
+  ///   <item><c>polinorerror.pipeline.is_final_handler</c>: <c>true</c> if this handler is the final (response-classifying) handler</item>
+  ///   <item><c>polinorerror.pipeline.policy.type</c>: short name of the PoliNorError policy type (e.g. <c>"RetryPolicy"</c>, <c>"FallbackPolicy"</c>)</item>
 	/// </list>
 	/// </remarks>
 	public static class PipelineTelemetry

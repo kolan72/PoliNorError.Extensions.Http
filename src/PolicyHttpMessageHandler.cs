@@ -86,8 +86,8 @@ namespace PoliNorError.Extensions.Http
 
 			if (activity != null)
 			{
-				activity.SetTag("pipeline.is_final_handler", _isFinalHandler);
-				activity.SetTag("pipeline.policy.type", _policy?.GetType().Name ?? "Unknown");
+				activity.SetTag("polinorerror.pipeline.is_final_handler", _isFinalHandler);
+				activity.SetTag("polinorerror.pipeline.policy.type", _policy?.GetType().Name ?? "Unknown");
 			}
 
 			return activity;
@@ -97,7 +97,7 @@ namespace PoliNorError.Extensions.Http
 		{
 			if (activity != null)
 			{
-				activity.SetTag("pipeline.result", result);
+				activity.SetTag("polinorerror.pipeline.result", result);
 			}
 		}
 
