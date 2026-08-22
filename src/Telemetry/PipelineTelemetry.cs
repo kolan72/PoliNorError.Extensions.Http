@@ -24,6 +24,23 @@ namespace PoliNorError.Extensions.Http
 		public const string SourceName = "PoliNorError.Extensions.Http";
 
 		/// <summary>
+		/// Name of the tag carrying the pipeline execution result:
+		/// <c>"success"</c>, <c>"failed"</c>, <c>"canceled"</c>, or <c>"faulted"</c>.
+		/// </summary>
+		public const string ResultTag = "polinorerror.pipeline.result";
+
+		/// <summary>
+		/// Name of the tag carrying the short PoliNorError policy type name
+		/// (e.g. <c>"RetryPolicy"</c>, <c>"FallbackPolicy"</c>).
+		/// </summary>
+		public const string PolicyTypeTag = "polinorerror.pipeline.policy.type";
+
+		/// <summary>
+		/// Name of the tag indicating whether this handler is the final (response-classifying) handler.
+		/// </summary>
+		public const string IsFinalHandlerTag = "polinorerror.pipeline.is_final_handler";
+
+		/// <summary>
 		/// The <see cref="ActivitySource"/> used to create activities for pipeline execution.
 		/// This is safe to use statically - when no listener is attached, all operations are no-alloc no-ops.
 		/// </summary>
