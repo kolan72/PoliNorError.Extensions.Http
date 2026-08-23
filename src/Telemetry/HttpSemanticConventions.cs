@@ -41,6 +41,13 @@ namespace PoliNorError.Extensions.Http
 		public const string ServerAddressTag = "server.address";
 
 		/// <summary>
+		/// Name of the tag carrying the server port number. Mirrors the
+		/// <c>server.port</c> attribute. Emitted only when <see cref="ServerAddressTag"/>
+		/// is set and the port is non-default for the request scheme.
+		/// </summary>
+		public const string ServerPortTag = "server.port";
+
+		/// <summary>
 		/// Name of the tag carrying the request path. Mirrors the <c>url.path</c> attribute.
 		/// </summary>
 		public const string UrlPathTag = "url.path";
@@ -77,7 +84,13 @@ namespace PoliNorError.Extensions.Http
 				return;
 
 			if (!string.IsNullOrEmpty(uri.Host))
+			{
 				activity.SetTag(ServerAddressTag, uri.Host);
+
+				var port = uri.Port;
+				if (port > 0 && !IsDefaultPort(uri.Scheme, port))
+					activity.SetTag(ServerPortTag, port);
+			}
 
 			activity.SetTag(UrlPathTag, uri.AbsolutePath);
 
@@ -183,6 +196,17 @@ namespace PoliNorError.Extensions.Http
 					return true;
 			}
 			return false;
+		}
+
+		/// <summary>
+		/// Returns <c>true</c> when <paramref name="port"/> is the default port
+		/// for the given URI <paramref name="scheme"/> (80 for <c>http</c>,
+		/// 443 for <c>https</c>). Default ports are omitted per OTel convention.
+		/// </summary>
+		private static bool IsDefaultPort(string scheme, int port)
+		{
+			return (scheme.Equals("http", StringComparison.OrdinalIgnoreCase) && port == 80) ||
+			       (scheme.Equals("https", StringComparison.OrdinalIgnoreCase) && port == 443);
 		}
 	}
 }

@@ -36,7 +36,7 @@
 - **OpenTelemetry integration**
 	- Built-in distributed tracing via `System.Diagnostics.ActivitySource`
 	- Zero-cost when no listener is attached
-		- Tags: `polinorerror.pipeline.result`, `polinorerror.pipeline.policy.type`, `polinorerror.pipeline.policy.name`, `polinorerror.pipeline.is_final_handler`, `http.request.method`, `url.full`, `url.path`, `server.address`, `http.response.status_code`
+		- Tags: `polinorerror.pipeline.result`, `polinorerror.pipeline.policy.type`, `polinorerror.pipeline.policy.name`, `polinorerror.pipeline.is_final_handler`, `http.request.method`, `url.full`, `url.path`, `server.address`, `server.port`, `http.response.status_code`
 ---
  - **.NET Standard 2.0 compatible**  
 ---
@@ -240,6 +240,7 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 - `url.full` — absolute request URL; sensitive query parameters (`sig`, `X-Amz-Signature`, etc.) are redacted to `REDACTED`
 - `url.path` — request path component
 - `server.address` — server domain name or IP from the request URI
+- `server.port` — server port; emitted only when non-default for the scheme
 - `http.response.status_code` — HTTP response status code as an integer (e.g. `200`, `504`); emitted on the success path and on the final handler's activity when the response status was filtered
 
 **Span status:** The library emits `ActivityKind.Client` spans. Per OTel conventions, the span status is derived from the HTTP response status code: 5xx → `Error` (MUST), 4xx → `Error` (SHOULD), 1xx–3xx → `Ok`. Override via a custom span processor if needed.

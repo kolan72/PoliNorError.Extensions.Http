@@ -53,7 +53,7 @@ Built-in distributed tracing via `System.Diagnostics.ActivitySource`:
 
 	- Zero-cost when no listener is attached (no allocations)
 	- Emits `Activity` per handler in the pipeline
-	- Tags: `pipeline.result`, `pipeline.policy.type`, `pipeline.is_final_handler`, `http.request.method`, `url.full`, `url.path`, `server.address`, `http.response.status_code`
+	- Tags: `pipeline.result`, `pipeline.policy.type`, `pipeline.is_final_handler`, `http.request.method`, `url.full`, `url.path`, `server.address`, `server.port`, `http.response.status_code`
 	- Works with any OTLP-compatible backend (Jaeger, Zipkin, Grafana, Datadog, etc.)
 
  **.NET Standard 2.0 compatible**  
@@ -265,6 +265,7 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 | `url.full` | Absolute request URL. Sensitive query parameters (`sig`, `X-Amz-Signature`, etc.) are redacted to `REDACTED` |
 | `url.path` | Request path component |
 | `server.address` | Server domain name or IP from the request URI |
+| `server.port` | Server port (emitted only when non-default for the scheme) |
 | `http.response.status_code` | HTTP response status code as an integer (e.g. `200`, `504`). Emitted on the success path and on the final handler's activity when the response status was filtered |
 
 ### Span status

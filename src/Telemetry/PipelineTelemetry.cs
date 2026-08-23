@@ -18,6 +18,7 @@ namespace PoliNorError.Extensions.Http
 	///   <item><c>url.full</c>: absolute request URL with sensitive query parameters redacted</item>
 	///   <item><c>url.path</c>: request path</item>
 	///   <item><c>server.address</c>: server domain name or IP</item>
+	///   <item><c>server.port</c>: server port, emitted only when non-default for the scheme</item>
 	///   <item><c>http.response.status_code</c>: HTTP response status code as an <c>int</c>; emitted on success and on the final handler when the response status was filtered</item>
 	/// </list>
 	/// Activities use <see cref="ActivityKind.Client"/>. Per the OpenTelemetry HTTP

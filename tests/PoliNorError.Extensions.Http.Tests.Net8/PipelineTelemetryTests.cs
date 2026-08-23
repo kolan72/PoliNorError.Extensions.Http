@@ -102,11 +102,13 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerAddressTag), Is.EqualTo("any.localhost"));
+			// Default port (80 for http) is not emitted
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerPortTag), Is.Null);
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/any"));
-		Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag), Is.EqualTo("http://any.localhost/any"));
-		Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
-		// 2xx response on a CLIENT span → Ok (per OTel spec)
-		Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Ok));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag), Is.EqualTo("http://any.localhost/any"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
+			// 2xx response on a CLIENT span → Ok (per OTel spec)
+			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Ok));
 		}
 
 		// --- Retry failure path ----------------------------------------
@@ -567,6 +569,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity, Is.Not.Null);
 			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("POST"));
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerAddressTag), Is.EqualTo("api.example.com"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerPortTag), Is.EqualTo(8443));
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/users/42"));
 			// sig value must be redacted; foo preserved
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag),
@@ -605,6 +608,40 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(urlFull, Does.Not.Contain("user"));
 			Assert.That(urlFull, Does.Not.Contain("pass"));
 			Assert.That(urlFull, Is.EqualTo("http://myhost.local/app?q=ok"));
+		}
+
+		[Test]
+		public async Task Should_Not_Emit_Server_Port_For_Default_Ports()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			// Default HTTPS port (443) and default HTTP port (80) must not be emitted
+			await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "https://secure.example.com/path?a=1"));
+			await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://insecure.example.com/path?b=2"));
+
+			var pipelineActivities = activities
+				.Where(a => a.OperationName == PipelineTelemetry.PipelineOperationName)
+				.ToList();
+
+			Assert.That(pipelineActivities, Is.Not.Empty);
+			// Every captured activity must omit server.port for default ports
+			Assert.That(pipelineActivities.TrueForAll(a =>
+				a.GetTagItem(HttpSemanticConventions.ServerPortTag) == null),
+				Is.True, "server.port should not be emitted for default ports (80, 443)");
 		}
 
 		[Test]
