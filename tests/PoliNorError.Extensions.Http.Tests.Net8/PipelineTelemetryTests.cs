@@ -559,7 +559,7 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			using var provider = services.BuildServiceProvider();
 			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
-			var request = new HttpRequestMessage(HttpMethod.Post, "https://api.example.com:8443/users/42?sig=secret&foo=bar");
+			var request = new HttpRequestMessage(HttpMethod.Post, "https://api.example.com:8443/users/42?sig=secret&foo=bar&X-Goog-Credential=cred123&AWSAccessKeyId=AKIA123");
 
 			await client.SendAsync(request);
 
@@ -571,10 +571,94 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerAddressTag), Is.EqualTo("api.example.com"));
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerPortTag), Is.EqualTo(8443));
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/users/42"));
-			// sig value must be redacted; foo preserved
+			// sig, X-Goog-Credential, and AWSAccessKeyId values must be redacted; foo preserved
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag),
-				Is.EqualTo("https://api.example.com:8443/users/42?sig=REDACTED&foo=bar"));
+				Is.EqualTo("https://api.example.com:8443/users/42?sig=REDACTED&foo=bar&X-Goog-Credential=REDACTED&AWSAccessKeyId=REDACTED"));
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
+		}
+
+		[Test]
+		public async Task Should_Redact_Expanded_SensitiveQueryParameters()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get,
+				"https://api.example.com/users?access_token=tok123&refresh_token=rtok&"
+				+ "id_token=idt&id_token_unused=keep&client_secret=secret123&"
+				+ "token=tkn&api_key=key123&apikey=key456&password=pw&pwd=pw2&jwt=eyxyz&"
+				+ "Signature=sig123&safe=ok");
+
+			await client.SendAsync(request);
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			var urlFull = pipelineActivity!.GetTagItem(HttpSemanticConventions.UrlFullTag) as string;
+			Assert.That(urlFull, Is.Not.Null);
+			Assert.That(urlFull, Does.Contain("access_token=REDACTED"));
+			Assert.That(urlFull, Does.Contain("refresh_token=REDACTED"));
+			Assert.That(urlFull, Does.Contain("id_token=REDACTED"));
+			Assert.That(urlFull, Does.Contain("id_token_unused=keep"));
+			Assert.That(urlFull, Does.Contain("client_secret=REDACTED"));
+			Assert.That(urlFull, Does.Contain("token=REDACTED"));
+			Assert.That(urlFull, Does.Contain("api_key=REDACTED"));
+			Assert.That(urlFull, Does.Contain("apikey=REDACTED"));
+			Assert.That(urlFull, Does.Contain("password=REDACTED"));
+			Assert.That(urlFull, Does.Contain("pwd=REDACTED"));
+			Assert.That(urlFull, Does.Contain("jwt=REDACTED"));
+			Assert.That(urlFull, Does.Contain("Signature=REDACTED"));
+			Assert.That(urlFull, Does.Contain("safe=ok"));
+		}
+
+		[Test]
+		public async Task Should_Not_Case_Insensitive_Redact_SensitiveParams()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get,
+				"https://api.example.com/users?sig=secret&SIG=notredacted&code=redacted&CODE=notredacted");
+
+			await client.SendAsync(request);
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			var urlFull = pipelineActivity!.GetTagItem(HttpSemanticConventions.UrlFullTag) as string;
+			Assert.That(urlFull, Is.Not.Null);
+			// Lowercase sensitive params ARE redacted (case-sensitive match)
+			Assert.That(urlFull, Does.Contain("sig=REDACTED"));
+			Assert.That(urlFull, Does.Contain("code=REDACTED"));
+			// Uppercase variants are NOT redacted (RFC 3986: query param names are case-sensitive)
+			Assert.That(urlFull, Does.Contain("SIG=notredacted"));
+			Assert.That(urlFull, Does.Contain("CODE=notredacted"));
 		}
 
 		[Test]

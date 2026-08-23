@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -53,14 +54,44 @@ namespace PoliNorError.Extensions.Http
 		public const string UrlPathTag = "url.path";
 
 		// Query-parameter names whose values MUST be redacted in url.full, per the
-		// OpenTelemetry specification. Matching is case-sensitive.
-		private static readonly string[] SensitiveQueryParameters =
+		// OpenTelemetry specification (url.full note [4], url.query note [10]):
+		//   https://opentelemetry.io/docs/specs/semconv/http/http-spans/
+		//
+		// The OTel default list is:
+		//   X-Amz-Signature, X-Amz-Credential, X-Amz-Security-Token, sig, X-Goog-Signature
+		//
+		// The spec states: "Matching of query parameter keys against the sensitive
+		// list SHOULD be case-sensitive." Per RFC 3986, query parameter names are
+		// inherently case-sensitive, so StringComparer.Ordinal preserves that semantics.
+		//
+		// This set extends the OTel defaults with additional well-known sensitive
+		// parameter names commonly seen in cloud-provider and OAuth/OIDC query strings.
+		private static readonly HashSet<string> SensitiveQueryParameters = new HashSet<string>(StringComparer.Ordinal)
 		{
+			// --- Cloud Provider Signatures (OTel defaults + extensions) ---
 			"X-Amz-Signature",
 			"X-Amz-Credential",
 			"X-Amz-Security-Token",
 			"sig",
-			"X-Goog-Signature"
+			"X-Goog-Signature",
+			"X-Goog-Credential",      // GCP equivalent of X-Amz-Credential
+			"AWSAccessKeyId",         // AWS query API access key ID
+			"Signature",              // Generic signature parameter (AWS SigV4, etc.)
+
+			// --- OAuth / OIDC ---
+			"code",                   // OAuth 2.0 Authorization Code
+			"access_token",           // OAuth 2.0 access token
+			"refresh_token",          // OAuth 2.0 refresh token
+			"id_token",               // OIDC ID token
+			"client_secret",          // OAuth 2.0 client secret
+
+			// --- Generic Application Auth ---
+			"token",                  // Generic bearer token
+			"api_key",                // API key (snake_case)
+			"apikey",                 // API key (no separator)
+			"password",               // Plain-text password
+			"pwd",                    // Password shorthand
+			"jwt",                    // Raw JWT in query string
 		};
 
 		/// <summary>
@@ -188,15 +219,7 @@ namespace PoliNorError.Extensions.Http
 			return "?" + string.Join("&", pairs);
 		}
 
-		private static bool IsSensitive(string key)
-		{
-			foreach (var sensitive in SensitiveQueryParameters)
-			{
-				if (key.Equals(sensitive, StringComparison.Ordinal))
-					return true;
-			}
-			return false;
-		}
+		private static bool IsSensitive(string key) => SensitiveQueryParameters.Contains(key);
 
 		/// <summary>
 		/// Returns <c>true</c> when <paramref name="port"/> is the default port
