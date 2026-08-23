@@ -259,6 +259,7 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 |-----|-------------|
 | `polinorerror.pipeline.result` | Policy execution result: `"success"` (policy succeeded), `"failed"` (policy returned a failed result), `"canceled"` (operation was canceled), or `"faulted"` (unexpected exception escaped the policy) |
 | `polinorerror.pipeline.policy.type` | PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`) |
+| `polinorerror.pipeline.policy.name` | User-configured policy name, emitted only when the policy has a name set via `WithPolicyName` |
 | `polinorerror.pipeline.is_final_handler` | `true` if this handler is the final (response-classifying) handler |
 
 ### Connecting to OpenTelemetry

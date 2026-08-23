@@ -36,7 +36,7 @@
 - **OpenTelemetry integration**
 	- Built-in distributed tracing via `System.Diagnostics.ActivitySource`
 	- Zero-cost when no listener is attached
-	- Tags: `polinorerror.pipeline.result`, `polinorerror.pipeline.policy.type`, `polinorerror.pipeline.is_final_handler`
+		- Tags: `polinorerror.pipeline.result`, `polinorerror.pipeline.policy.type`, `polinorerror.pipeline.policy.name`, `polinorerror.pipeline.is_final_handler`
 ---
  - **.NET Standard 2.0 compatible**  
 ---
@@ -234,6 +234,7 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 **Activity tags:**
 - `polinorerror.pipeline.result` — `"success"` (policy succeeded), `"failed"` (policy returned a failed result), `"canceled"` (operation was canceled), or `"faulted"` (unexpected exception escaped the policy)
 - `polinorerror.pipeline.policy.type` — PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`)
+- `polinorerror.pipeline.policy.name` — the user-configured policy name, emitted only when explicitly set via `WithPolicyName`
 - `polinorerror.pipeline.is_final_handler` — `true` if this handler is the final (response-classifying) handler
 
 **Connecting to OpenTelemetry:**
