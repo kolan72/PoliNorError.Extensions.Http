@@ -13,6 +13,7 @@ namespace PoliNorError.Extensions.Http
   ///   <item><c>polinorerror.pipeline.result</c>: <c>"success"</c>, <c>"failed"</c>, <c>"canceled"</c>, or <c>"faulted"</c> (unexpected exception escaped the policy)</item>
   ///   <item><c>polinorerror.pipeline.is_final_handler</c>: <c>true</c> if this handler is the final (response-classifying) handler</item>
   ///   <item><c>polinorerror.pipeline.policy.type</c>: short name of the PoliNorError policy type (e.g. <c>"RetryPolicy"</c>, <c>"FallbackPolicy"</c>)</item>
+  ///   <item><c>polinorerror.pipeline.policy.name</c>: the name of the PoliNorError policy, emitted only when explicitly set via <c>WithPolicyName</c></item>
 	/// </list>
 	/// </remarks>
 	public static class PipelineTelemetry
@@ -34,6 +35,13 @@ namespace PoliNorError.Extensions.Http
 		/// (e.g. <c>"RetryPolicy"</c>, <c>"FallbackPolicy"</c>).
 		/// </summary>
 		public const string PolicyTypeTag = "polinorerror.pipeline.policy.type";
+
+		/// <summary>
+		/// Name of the tag carrying the user-configured PoliNorError policy name
+		/// (e.g. <c>"catalog-api-retry"</c>). Emitted only when the policy has a name set
+		/// via <c>WithPolicyName</c>.
+		/// </summary>
+		public const string PolicyNameTag = "polinorerror.pipeline.policy.name";
 
 		/// <summary>
 		/// Name of the tag indicating whether this handler is the final (response-classifying) handler.

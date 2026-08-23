@@ -88,7 +88,17 @@ namespace PoliNorError.Extensions.Http
 			if (activity != null)
 			{
 				activity.SetTag(PipelineTelemetry.IsFinalHandlerTag, _isFinalHandler);
-				activity.SetTag(PipelineTelemetry.PolicyTypeTag, _policy?.GetType().Name ?? "Unknown");
+				var policyType = _policy?.GetType().Name ?? "Unknown";
+				activity.SetTag(PipelineTelemetry.PolicyTypeTag, policyType);
+
+				if (_policy is IPolicyBase namedPolicy)
+				{
+					var policyName = namedPolicy.PolicyName;
+					if (!string.IsNullOrEmpty(policyName) && policyName != policyType)
+					{
+						activity.SetTag(PipelineTelemetry.PolicyNameTag, policyName);
+					}
+				}
 			}
 
 			return activity;

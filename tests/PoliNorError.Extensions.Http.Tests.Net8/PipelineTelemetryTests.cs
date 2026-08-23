@@ -223,6 +223,58 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.PolicyTypeTag), Is.EqualTo("RetryPolicy"));
 		}
 
+		// --- Policy name tag -------------------------------------------
+
+		[Test]
+		public void Should_Tag_Activity_With_Policy_Name_When_Policy_Has_Name()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1).WithPolicyName("myRetryPolicy"))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			Assert.ThrowsAsync<HttpPolicyResultException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.PolicyNameTag), Is.EqualTo("myRetryPolicy"));
+		}
+
+		[Test]
+		public void Should_Not_Emit_Policy_Name_Tag_When_Policy_Has_No_Name()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			Assert.ThrowsAsync<HttpPolicyResultException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.PolicyNameTag), Is.Null);
+		}
+
 		// --- No-op when no listener ------------------------------------
 
 		[Test]
