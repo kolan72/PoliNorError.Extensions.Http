@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using RichardSzalay.MockHttp;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -98,6 +99,12 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity, Is.Not.Null);
 			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.ResultTag), Is.EqualTo("success"));
 			Assert.That(pipelineActivity.GetTagItem(PipelineTelemetry.IsFinalHandlerTag), Is.EqualTo(true));
+
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerAddressTag), Is.EqualTo("any.localhost"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/any"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag), Is.EqualTo("http://any.localhost/any"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
 		}
 
 		// --- Retry failure path ----------------------------------------
@@ -126,6 +133,10 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.ResultTag), Is.EqualTo("failed"));
 			Assert.That(pipelineActivity.GetTagItem(PipelineTelemetry.PolicyTypeTag), Is.EqualTo("RetryPolicy"));
 			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
+
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/any"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.Null);
 		}
 
 		// --- Cancellation path -----------------------------------------
@@ -158,6 +169,9 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity, Is.Not.Null);
 			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.ResultTag), Is.EqualTo("canceled"));
 			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
+
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.Null);
 		}
 
 		// --- Fallback path ---------------------------------------------
@@ -355,6 +369,18 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity, Is.Not.Null);
 			Assert.That(exception.HasFailedResponse, Is.True);
 			Assert.That(exception.FailedResponseData.StatusCode, Is.EqualTo(HttpStatusCode.GatewayTimeout));
+
+			// Request tags are present on every pipeline activity.
+			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
+
+			// The final handler's activity carries the response status code (504 GatewayTimeout)
+			// because result.UnprocessedError is a FailedHttpResponseException on that handler.
+			var finalHandlerActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName &&
+					a.GetTagItem(PipelineTelemetry.IsFinalHandlerTag) as bool? == true);
+			Assert.That(finalHandlerActivity, Is.Not.Null);
+			Assert.That(finalHandlerActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag),
+				Is.EqualTo((int)HttpStatusCode.GatewayTimeout));
 		}
 
 		[Test]
@@ -507,6 +533,132 @@ namespace PoliNorError.Extensions.Http.Tests
 				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
 
 			Assert.That(thrown.Message, Is.EqualTo("No listener"));
+		}
+
+		// --- HTTP semantic conventions ----------------------------------
+
+		[Test]
+		public async Task Should_Tag_Request_With_HTTP_Semantic_Conventions()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Post, "https://api.example.com:8443/users/42?sig=secret&foo=bar");
+
+			await client.SendAsync(request);
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("POST"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerAddressTag), Is.EqualTo("api.example.com"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/users/42"));
+			// sig value must be redacted; foo preserved
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag),
+				Is.EqualTo("https://api.example.com:8443/users/42?sig=REDACTED&foo=bar"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
+		}
+
+		[Test]
+		public async Task Should_Not_Embed_Credentials_In_Url_Full()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "http://user:pass@myhost.local/app?q=ok");
+
+			await client.SendAsync(request);
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			// Credentials must not appear in url.full
+			var urlFull = pipelineActivity!.GetTagItem(HttpSemanticConventions.UrlFullTag) as string;
+			Assert.That(urlFull, Does.Not.Contain("user"));
+			Assert.That(urlFull, Does.Not.Contain("pass"));
+			Assert.That(urlFull, Is.EqualTo("http://myhost.local/app?q=ok"));
+		}
+
+		[Test]
+		public void Should_Tag_Response_Status_Code_On_Failed_Response()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var fakeHandler = new DelegatingHandlerThatReturnsBadStatusCode(HttpStatusCode.BadGateway);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()))
+				.AddHttpMessageHandler(() => fakeHandler);
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			Assert.ThrowsAsync<HttpPolicyResultException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			var finalHandlerActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName &&
+					a.GetTagItem(PipelineTelemetry.IsFinalHandlerTag) as bool? == true);
+
+			Assert.That(finalHandlerActivity, Is.Not.Null);
+			Assert.That(finalHandlerActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag),
+				Is.EqualTo((int)HttpStatusCode.BadGateway));
+		}
+
+		[Test]
+		public void Should_Not_Tag_Response_Status_Code_On_Non_Http_Error()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			Assert.ThrowsAsync<HttpPolicyResultException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			// HttpRequestException (network failure) carries no HTTP status code
+			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.Null);
 		}
 
 		// --- PipelineTelemetry.Source metadata --------------------------

@@ -30,7 +30,7 @@ namespace PoliNorError.Extensions.Http
 
 		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
-			using (var activity = StartPipelineActivity())
+			using (var activity = StartPipelineActivity(request))
 			{
 				try
 				{
@@ -42,12 +42,15 @@ namespace PoliNorError.Extensions.Http
 					{
 						SetResultTag(activity, "success");
 						activity?.SetStatus(ActivityStatusCode.Ok);
+						HttpSemanticConventions.SetResponseStatusCodeTag(activity, result.Result.StatusCode);
 						return result.Result;
 					}
 
 					if (result.IsFailed || result.IsCanceled)
 					{
 						SetResultTag(activity, result.IsCanceled ? "canceled" : "failed");
+						if (result.UnprocessedError is FailedHttpResponseException failedEx)
+							HttpSemanticConventions.SetResponseStatusCodeTag(activity, failedEx.FailedResponseData.StatusCode);
 						if (result.IsCanceled)
 							activity?.SetStatus(ActivityStatusCode.Error, "Operation canceled");
 						else
@@ -70,6 +73,8 @@ namespace PoliNorError.Extensions.Http
 					// exception and mark it as errored so the trace reflects every failure mode.
 					// HttpPolicyResultException is excluded - its status is set explicitly above.
 					SetResultTag(activity, "faulted");
+					if (ex is FailedHttpResponseException faultedEx)
+						HttpSemanticConventions.SetResponseStatusCodeTag(activity, faultedEx.FailedResponseData.StatusCode);
 					activity?.AddException(ex);
 					if (activity?.Status != ActivityStatusCode.Error)
 						activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
@@ -79,7 +84,7 @@ namespace PoliNorError.Extensions.Http
 			}
 		}
 
-		private Activity StartPipelineActivity()
+		private Activity StartPipelineActivity(HttpRequestMessage request)
 		{
 			var activity = PipelineTelemetry.Source.StartActivity(
 				PipelineTelemetry.PipelineOperationName,
@@ -87,6 +92,8 @@ namespace PoliNorError.Extensions.Http
 
 			if (activity != null)
 			{
+				HttpSemanticConventions.SetRequestTags(activity, request);
+
 				activity.SetTag(PipelineTelemetry.IsFinalHandlerTag, _isFinalHandler);
 				var policyType = _policy?.GetType().Name ?? "Unknown";
 				activity.SetTag(PipelineTelemetry.PolicyTypeTag, policyType);

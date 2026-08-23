@@ -10,10 +10,15 @@ namespace PoliNorError.Extensions.Http
 	/// <remarks>
 	/// Activity tags emitted by this library:
 	/// <list type="bullet">
-  ///   <item><c>polinorerror.pipeline.result</c>: <c>"success"</c>, <c>"failed"</c>, <c>"canceled"</c>, or <c>"faulted"</c> (unexpected exception escaped the policy)</item>
-  ///   <item><c>polinorerror.pipeline.is_final_handler</c>: <c>true</c> if this handler is the final (response-classifying) handler</item>
-  ///   <item><c>polinorerror.pipeline.policy.type</c>: short name of the PoliNorError policy type (e.g. <c>"RetryPolicy"</c>, <c>"FallbackPolicy"</c>)</item>
-  ///   <item><c>polinorerror.pipeline.policy.name</c>: the name of the PoliNorError policy, emitted only when explicitly set via <c>WithPolicyName</c></item>
+	///   <item><c>polinorerror.pipeline.result</c>: <c>"success"</c>, <c>"failed"</c>, <c>"canceled"</c>, or <c>"faulted"</c> (unexpected exception escaped the policy)</item>
+	///   <item><c>polinorerror.pipeline.is_final_handler</c>: <c>true</c> if this handler is the final (response-classifying) handler</item>
+	///   <item><c>polinorerror.pipeline.policy.type</c>: short name of the PoliNorError policy type (e.g. <c>"RetryPolicy"</c>, <c>"FallbackPolicy"</c>)</item>
+	///   <item><c>polinorerror.pipeline.policy.name</c>: the name of the PoliNorError policy, emitted only when explicitly set via <c>WithPolicyName</c></item>
+	///   <item><c>http.request.method</c>: HTTP request method (e.g. <c>"GET"</c>, <c>"POST"</c>), per OTel semantic conventions</item>
+	///   <item><c>url.full</c>: absolute request URL with sensitive query parameters redacted</item>
+	///   <item><c>url.path</c>: request path</item>
+	///   <item><c>server.address</c>: server domain name or IP</item>
+	///   <item><c>http.response.status_code</c>: HTTP response status code as an <c>int</c>; emitted on success and on the final handler when the response status was filtered</item>
 	/// </list>
 	/// </remarks>
 	public static class PipelineTelemetry
