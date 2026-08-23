@@ -88,7 +88,7 @@ namespace PoliNorError.Extensions.Http
 		{
 			var activity = PipelineTelemetry.Source.StartActivity(
 				PipelineTelemetry.PipelineOperationName,
-				ActivityKind.Internal);
+				ActivityKind.Client);
 
 			if (activity != null)
 			{
