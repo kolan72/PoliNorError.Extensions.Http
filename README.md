@@ -267,6 +267,18 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 | `server.address` | Server domain name or IP from the request URI |
 | `http.response.status_code` | HTTP response status code as an integer (e.g. `200`, `504`). Emitted on the success path and on the final handler's activity when the response status was filtered |
 
+### Span status
+
+The library emits `ActivityKind.Client` spans. Per the [OpenTelemetry HTTP semantic conventions](https://opentelemetry.io/docs/specs/semconv/http/http-spans/), the span status is determined from the HTTP response status code:
+
+| HTTP status code | Span status |
+|------------------|-------------|
+| 1xx, 2xx, 3xx | `Ok` |
+| 4xx | `Error` (SHOULD) |
+| 5xx | `Error` (MUST) |
+
+This means that even when the resiliency policy succeeds (the policy didn't retry or fail), a 4xx or 5xx response will be marked as an error span. To suppress this behavior for specific cases (e.g., using 404 for "check-if-exists"), use a custom OpenTelemetry span processor to override the status.
+
 ### Connecting to OpenTelemetry
 
 Subscribe to the `PoliNorError.Extensions.Http` activity source in your `TracerProvider` configuration:

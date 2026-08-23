@@ -242,6 +242,8 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 - `server.address` — server domain name or IP from the request URI
 - `http.response.status_code` — HTTP response status code as an integer (e.g. `200`, `504`); emitted on the success path and on the final handler's activity when the response status was filtered
 
+**Span status:** The library emits `ActivityKind.Client` spans. Per OTel conventions, the span status is derived from the HTTP response status code: 5xx → `Error` (MUST), 4xx → `Error` (SHOULD), 1xx–3xx → `Ok`. Override via a custom span processor if needed.
+
 **Connecting to OpenTelemetry:**
 ```csharp
 using var tracerProvider = Sdk.CreateTracerProviderBuilder()
