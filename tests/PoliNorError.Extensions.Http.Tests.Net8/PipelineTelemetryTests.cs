@@ -103,8 +103,10 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerAddressTag), Is.EqualTo("any.localhost"));
 			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/any"));
-			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag), Is.EqualTo("http://any.localhost/any"));
-			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
+		Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag), Is.EqualTo("http://any.localhost/any"));
+		Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
+		// 2xx response on a CLIENT span → Ok (per OTel spec)
+		Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Ok));
 		}
 
 		// --- Retry failure path ----------------------------------------
@@ -657,8 +659,78 @@ namespace PoliNorError.Extensions.Http.Tests
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 
 			Assert.That(pipelineActivity, Is.Not.Null);
-			// HttpRequestException (network failure) carries no HTTP status code
-			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.Null);
+		// HttpRequestException (network failure) carries no HTTP status code
+		Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.Null);
+	}
+
+		// --- OTel CLIENT span status from HTTP status code -----------------
+
+		[Test]
+		public async Task Should_Mark_Activity_As_Error_When_Success_Has_5xx_Status_Code()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var fakeHandler = new DelegatingHandlerThatReturnsBadStatusCode(HttpStatusCode.ServiceUnavailable);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					// None() means no status codes are filtered, so 503 passes through
+					// as a successful policy result — but the span must still be Error
+					// per OTel CLIENT span rules (5xx MUST be Error).
+					.AsFinalHandler(HttpErrorFilter.None()))
+				.AddHttpMessageHandler(() => fakeHandler);
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any"));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName &&
+					a.GetTagItem(PipelineTelemetry.IsFinalHandlerTag) as bool? == true);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag),
+				Is.EqualTo((int)HttpStatusCode.ServiceUnavailable));
+			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
+		}
+
+		[Test]
+		public async Task Should_Mark_Activity_As_Error_When_Success_Has_4xx_Status_Code()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var fakeHandler = new DelegatingHandlerThatReturnsBadStatusCode(HttpStatusCode.NotFound);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					// None() means no status codes are filtered, so 404 passes through
+					// as a successful policy result — but the span must still be Error
+					// per OTel CLIENT span rules (4xx SHOULD be Error).
+					.AsFinalHandler(HttpErrorFilter.None()))
+				.AddHttpMessageHandler(() => fakeHandler);
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any"));
+
+			Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+
+			var finalHandlerActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName &&
+					a.GetTagItem(PipelineTelemetry.IsFinalHandlerTag) as bool? == true);
+
+			Assert.That(finalHandlerActivity, Is.Not.Null);
+			Assert.That(finalHandlerActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag),
+				Is.EqualTo((int)HttpStatusCode.NotFound));
+			Assert.That(finalHandlerActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
 		}
 
 		// --- PipelineTelemetry.Source metadata --------------------------

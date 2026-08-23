@@ -41,7 +41,7 @@ namespace PoliNorError.Extensions.Http
 					if (result.IsSuccess)
 					{
 						SetResultTag(activity, "success");
-						activity?.SetStatus(ActivityStatusCode.Ok);
+						HttpSemanticConventions.SetActivityStatusFromHttpStatusCode(activity, result.Result.StatusCode);
 						HttpSemanticConventions.SetResponseStatusCodeTag(activity, result.Result.StatusCode);
 						return result.Result;
 					}

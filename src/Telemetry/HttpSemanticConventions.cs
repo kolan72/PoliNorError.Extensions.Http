@@ -96,6 +96,20 @@ namespace PoliNorError.Extensions.Http
 		}
 
 		/// <summary>
+		/// Sets the activity status from an HTTP response status code, applying the
+		/// OpenTelemetry semantic conventions for CLIENT spans:
+		/// 4xx SHOULD be Error, 5xx MUST be Error; 1xx–3xx are Ok.
+		/// The status description is intentionally left blank — the reason can be
+		/// inferred from the <c>http.response.status_code</c> tag.
+		/// </summary>
+		public static void SetActivityStatusFromHttpStatusCode(Activity activity, HttpStatusCode statusCode)
+		{
+			if (activity is null)
+				return;
+			activity.SetStatus((int)statusCode >= 400 ? ActivityStatusCode.Error : ActivityStatusCode.Ok);
+		}
+
+		/// <summary>
 		/// Builds a sanitized <c>url.full</c> value: strips userinfo (credentials)
 		/// and redacts sensitive query-parameter values, replacing them with
 		/// <c>REDACTED</c> while preserving the parameter name.

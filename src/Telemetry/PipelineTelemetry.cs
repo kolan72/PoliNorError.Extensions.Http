@@ -20,6 +20,10 @@ namespace PoliNorError.Extensions.Http
 	///   <item><c>server.address</c>: server domain name or IP</item>
 	///   <item><c>http.response.status_code</c>: HTTP response status code as an <c>int</c>; emitted on success and on the final handler when the response status was filtered</item>
 	/// </list>
+	/// Activities use <see cref="ActivityKind.Client"/>. Per the OpenTelemetry HTTP
+	/// semantic conventions, the span status is derived from the HTTP response status code:
+	/// 5xx → <see cref="ActivityStatusCode.Error"/> (MUST), 4xx → <see cref="ActivityStatusCode.Error"/>
+	/// (SHOULD), 1xx–3xx → <see cref="ActivityStatusCode.Ok"/>.
 	/// </remarks>
 	public static class PipelineTelemetry
 	{
