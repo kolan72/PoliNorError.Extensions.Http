@@ -53,7 +53,7 @@ Built-in distributed tracing via `System.Diagnostics.ActivitySource`:
 
 	- Zero-cost when no listener is attached (no allocations)
 	- Emits `Activity` per handler in the pipeline
-	- Tags: `pipeline.result`, `pipeline.policy.type`, `pipeline.is_final_handler`
+	- Tags: `pipeline.result`, `pipeline.policy.type`, `pipeline.is_final_handler`, `http.request.method`, `url.full`, `url.path`, `server.address`, `http.response.status_code`
 	- Works with any OTLP-compatible backend (Jaeger, Zipkin, Grafana, Datadog, etc.)
 
  **.NET Standard 2.0 compatible**  
@@ -261,6 +261,11 @@ The library emits distributed-tracing activities via `System.Diagnostics.Activit
 | `polinorerror.pipeline.policy.type` | PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`) |
 | `polinorerror.pipeline.policy.name` | User-configured policy name, emitted only when the policy has a name set via `WithPolicyName` |
 | `polinorerror.pipeline.is_final_handler` | `true` if this handler is the final (response-classifying) handler |
+| `http.request.method` | HTTP request method (e.g. `GET`, `POST`), per [OTel HTTP semantic conventions](https://opentelemetry.io/docs/specs/semconv/http/http-spans/) |
+| `url.full` | Absolute request URL. Sensitive query parameters (`sig`, `X-Amz-Signature`, etc.) are redacted to `REDACTED` |
+| `url.path` | Request path component |
+| `server.address` | Server domain name or IP from the request URI |
+| `http.response.status_code` | HTTP response status code as an integer (e.g. `200`, `504`). Emitted on the success path and on the final handler's activity when the response status was filtered |
 
 ### Connecting to OpenTelemetry
 
