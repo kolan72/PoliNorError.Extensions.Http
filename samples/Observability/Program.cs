@@ -78,5 +78,5 @@ catch (Exception ex)
 
 Console.WriteLine("=== Done ===");
 Console.WriteLine("\nIn production, replace AddConsoleExporter() with:");
-Console.WriteLine("  .AddZipkinExporter()     > Jaeger/Zipkin UI at localhost:16686");
-Console.WriteLine("  .AddOtlpExporter()      > Any OTLP collector (Grafana, Datadog, etc.)");
+Console.WriteLine("  .AddZipkinExporter()     > Zipkin collector/UI at localhost:9411");
+Console.WriteLine("  .AddOtlpExporter()       > Any OTLP collector (Grafana, Datadog, Jaeger UI at localhost:16686, etc.)");
