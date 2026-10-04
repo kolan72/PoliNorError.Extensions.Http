@@ -466,7 +466,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			{
 				if (_position >= _response.Length) return 0;
 				int n = Math.Min(count, _response.Length - _position);
-				Buffer.BlockCopy(_response, _position, buffer, offset, n);
+				_response.AsSpan(_position, n).CopyTo(buffer.AsSpan(offset, n));
 				_position += n;
 				return n;
 			}
