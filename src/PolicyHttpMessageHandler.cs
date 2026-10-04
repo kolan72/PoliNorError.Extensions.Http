@@ -75,7 +75,32 @@ namespace PoliNorError.Extensions.Http
 					SetResultTag(activity, "faulted");
 					if (ex is FailedHttpResponseException faultedEx)
 						HttpSemanticConventions.SetResponseStatusCodeTag(activity, faultedEx.FailedResponseData.StatusCode);
+
+#if NET7_0_OR_GREATER
+					// Use built-in AddException method on .NET 7+ / DiagnosticSource 7.0+
 					activity?.AddException(ex);
+#else
+					// Fallback: Manually emit the "exception" event with standard OTel tags.
+					// Activity.AddException was introduced in .NET 7 / System.Diagnostics.DiagnosticSource 7.0.0.
+					// See: https://opentelemetry.io/docs/specs/semconv/exceptions/exceptions-spans/
+					if (activity != null)
+					{
+						var tags = new ActivityTagsCollection
+						{
+							{ "exception.type", ex.GetType().FullName },
+							{ "exception.message", ex.Message }
+						};
+
+						// Include stack trace if available (per OTel semantic conventions)
+						if (!string.IsNullOrEmpty(ex.StackTrace))
+						{
+							tags.Add("exception.stacktrace", ex.StackTrace);
+						}
+
+						activity.AddEvent(new ActivityEvent("exception", tags: tags));
+					}
+#endif
+
 					if (activity?.Status != ActivityStatusCode.Error)
 						activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 					DisposeOrphanedPreviousResponse(request);
