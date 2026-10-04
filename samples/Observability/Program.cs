@@ -170,5 +170,5 @@ Console.WriteLine("  • ConfigurePolicyResultHandling enriches spans with busin
 Console.WriteLine("  • Activity.Current.SetTag() adds custom attributes visible in traces");
 Console.WriteLine("  • Activity.AddEvent() records important moments in the span timeline");
 Console.WriteLine("\nIn production, replace AddConsoleExporter() with:");
-Console.WriteLine("  .AddZipkinExporter()     → Jaeger/Zipkin UI at localhost:16686");
-Console.WriteLine("  .AddOtlpExporter()       → Any OTLP collector (Grafana, Datadog, etc.)");
+Console.WriteLine("  .AddZipkinExporter()     > Zipkin collector/UI at localhost:9411");
+Console.WriteLine("  .AddOtlpExporter()       > Any OTLP collector (Grafana, Datadog, Jaeger UI at localhost:16686, etc.)");
