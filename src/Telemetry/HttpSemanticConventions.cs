@@ -165,14 +165,21 @@ namespace PoliNorError.Extensions.Http
 
 			var sanitizedQuery = RedactSensitiveQueryParams(uri.Query);
 
+			// On .NET Framework, UriBuilder.Query prepends '?' even when the value
+			// already starts with one, producing "??". Strip the leading '?' so both
+			// .NET Framework and .NET (Core) emit a single '?'.
+			var queryForBuilder = sanitizedQuery.Length > 0 && sanitizedQuery[0] == '?'
+				? sanitizedQuery.Substring(1)
+				: sanitizedQuery;
+
 			var builder = new UriBuilder(uri)
 			{
-				Query = sanitizedQuery,
+				Query = queryForBuilder,
 				UserName = string.Empty,
 				Password = string.Empty
 			};
 
-			if (uri.UserInfo != null)
+			if (!string.IsNullOrEmpty(uri.UserInfo))
 			{
 				return builder.Uri.ToString();
 			}
