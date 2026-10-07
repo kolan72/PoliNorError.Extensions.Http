@@ -36,7 +36,7 @@
 - **OpenTelemetry integration**
 	- Built-in distributed tracing via `System.Diagnostics.ActivitySource`
 	- Zero-cost when no listener is attached
-	- Tags: `pipeline.result`, `pipeline.policy.type`, `pipeline.is_final_handler`
+		- Tags: `polinorerror.pipeline.result`, `polinorerror.pipeline.policy.type`, `polinorerror.pipeline.policy.name`, `polinorerror.pipeline.is_final_handler`, `http.request.method`, `url.full`, `url.path`, `server.address`, `server.port`, `http.response.status_code`
 ---
  - **.NET Standard 2.0 compatible**  
 ---
@@ -232,9 +232,18 @@ You can also configure `RetryPolicy` details inline using the `AddRetryHandler` 
 The library emits distributed-tracing activities via `System.Diagnostics.ActivitySource`. Each handler in the pipeline creates an `Activity` that records the policy execution result.
 
 **Activity tags:**
-- `pipeline.result` — `"success"`, `"failed"`, or `"canceled"`
-- `pipeline.policy.type` — PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`)
-- `pipeline.is_final_handler` — `true` if this handler is the final (response-classifying) handler
+- `polinorerror.pipeline.result` — `"success"` (policy succeeded), `"failed"` (policy returned a failed result), `"canceled"` (operation was canceled), or `"faulted"` (unexpected exception escaped the policy)
+- `polinorerror.pipeline.policy.type` — PoliNorError policy type name (e.g. `RetryPolicy`, `FallbackPolicy`)
+- `polinorerror.pipeline.policy.name` — the user-configured policy name, emitted only when explicitly set via `WithPolicyName`
+- `polinorerror.pipeline.is_final_handler` — `true` if this handler is the final (response-classifying) handler
+- `http.request.method` — HTTP request method (e.g. `GET`, `POST`), per [OTel HTTP semantic conventions](https://opentelemetry.io/docs/specs/semconv/http/http-spans/)
+- `url.full` — absolute request URL; sensitive query parameters (`sig`, `X-Amz-Signature`, etc.) are redacted to `REDACTED`
+- `url.path` — request path component
+- `server.address` — server domain name or IP from the request URI
+- `server.port` — server port; emitted only when non-default for the scheme
+- `http.response.status_code` — HTTP response status code as an integer (e.g. `200`, `504`); emitted on the success path and on the final handler's activity when the response status was filtered
+
+**Span status:** The library emits `ActivityKind.Client` spans. Per OTel conventions, the span status is derived from the HTTP response status code: 5xx → `Error` (MUST), 4xx → `Error` (SHOULD), 1xx–3xx → `Ok`. Override via a custom span processor if needed.
 
 **Connecting to OpenTelemetry:**
 ```csharp

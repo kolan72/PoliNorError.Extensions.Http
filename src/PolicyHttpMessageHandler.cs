@@ -30,7 +30,7 @@ namespace PoliNorError.Extensions.Http
 
 		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
-			using (var activity = StartPipelineActivity())
+			using (var activity = StartPipelineActivity(request))
 			{
 				try
 				{
@@ -41,12 +41,16 @@ namespace PoliNorError.Extensions.Http
 					if (result.IsSuccess)
 					{
 						SetResultTag(activity, "success");
+						HttpSemanticConventions.SetActivityStatusFromHttpStatusCode(activity, result.Result.StatusCode);
+						HttpSemanticConventions.SetResponseStatusCodeTag(activity, result.Result.StatusCode);
 						return result.Result;
 					}
 
 					if (result.IsFailed || result.IsCanceled)
 					{
 						SetResultTag(activity, result.IsCanceled ? "canceled" : "failed");
+						if (result.UnprocessedError is FailedHttpResponseException failedEx)
+							HttpSemanticConventions.SetResponseStatusCodeTag(activity, failedEx.FailedResponseData.StatusCode);
 						if (result.IsCanceled)
 							activity?.SetStatus(ActivityStatusCode.Error, "Operation canceled");
 						else
@@ -67,9 +71,36 @@ namespace PoliNorError.Extensions.Http
 					// An unexpected exception escaped the policy (e.g., _policy.HandleAsync threw
 					// instead of returning a PolicyResult). Make the span authoritative: record the
 					// exception and mark it as errored so the trace reflects every failure mode.
-					// HttpPolicyResultException is excluded — its status is set explicitly above.
+					// HttpPolicyResultException is excluded - its status is set explicitly above.
 					SetResultTag(activity, "faulted");
+					if (ex is FailedHttpResponseException faultedEx)
+						HttpSemanticConventions.SetResponseStatusCodeTag(activity, faultedEx.FailedResponseData.StatusCode);
+
+#if NET7_0_OR_GREATER
+					// Use built-in AddException method on .NET 7+ / DiagnosticSource 7.0+
 					activity?.AddException(ex);
+#else
+					// Fallback: Manually emit the "exception" event with standard OTel tags.
+					// Activity.AddException was introduced in .NET 7 / System.Diagnostics.DiagnosticSource 7.0.0.
+					// See: https://opentelemetry.io/docs/specs/semconv/exceptions/exceptions-spans/
+					if (activity != null)
+					{
+						var tags = new ActivityTagsCollection
+						{
+							{ "exception.type", ex.GetType().FullName },
+							{ "exception.message", ex.Message }
+						};
+
+						// Include stack trace if available (per OTel semantic conventions)
+						if (!string.IsNullOrEmpty(ex.StackTrace))
+						{
+							tags.Add("exception.stacktrace", ex.StackTrace);
+						}
+
+						activity.AddEvent(new ActivityEvent("exception", tags: tags));
+					}
+#endif
+
 					if (activity?.Status != ActivityStatusCode.Error)
 						activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
 					DisposeOrphanedPreviousResponse(request);
@@ -78,16 +109,28 @@ namespace PoliNorError.Extensions.Http
 			}
 		}
 
-		private Activity StartPipelineActivity()
+		private Activity StartPipelineActivity(HttpRequestMessage request)
 		{
 			var activity = PipelineTelemetry.Source.StartActivity(
 				PipelineTelemetry.PipelineOperationName,
-				ActivityKind.Internal);
+				ActivityKind.Client);
 
 			if (activity != null)
 			{
-				activity.SetTag("pipeline.is_final_handler", _isFinalHandler);
-				activity.SetTag("pipeline.policy.type", _policy?.GetType().Name ?? "Unknown");
+				HttpSemanticConventions.SetRequestTags(activity, request);
+
+				activity.SetTag(PipelineTelemetry.IsFinalHandlerTag, _isFinalHandler);
+				var policyType = _policy?.GetType().Name ?? "Unknown";
+				activity.SetTag(PipelineTelemetry.PolicyTypeTag, policyType);
+
+				if (_policy is IPolicyBase namedPolicy)
+				{
+					var policyName = namedPolicy.PolicyName;
+					if (!string.IsNullOrEmpty(policyName) && policyName != policyType)
+					{
+						activity.SetTag(PipelineTelemetry.PolicyNameTag, policyName);
+					}
+				}
 			}
 
 			return activity;
@@ -97,7 +140,7 @@ namespace PoliNorError.Extensions.Http
 		{
 			if (activity != null)
 			{
-				activity.SetTag("pipeline.result", result);
+				activity.SetTag(PipelineTelemetry.ResultTag, result);
 			}
 		}
 

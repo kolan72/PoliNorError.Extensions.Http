@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using RichardSzalay.MockHttp;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Http;
@@ -96,8 +97,18 @@ namespace PoliNorError.Extensions.Http.Tests
 			var pipelineActivity = activities
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 			Assert.That(pipelineActivity, Is.Not.Null);
-			Assert.That(pipelineActivity!.GetTagItem("pipeline.result"), Is.EqualTo("success"));
-			Assert.That(pipelineActivity.GetTagItem("pipeline.is_final_handler"), Is.EqualTo(true));
+			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.ResultTag), Is.EqualTo("success"));
+			Assert.That(pipelineActivity.GetTagItem(PipelineTelemetry.IsFinalHandlerTag), Is.EqualTo(true));
+
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerAddressTag), Is.EqualTo("any.localhost"));
+			// Default port (80 for http) is not emitted
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerPortTag), Is.Null);
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/any"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag), Is.EqualTo("http://any.localhost/any"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
+			// 2xx response on a CLIENT span → Ok (per OTel spec)
+			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Ok));
 		}
 
 		// --- Retry failure path ----------------------------------------
@@ -123,9 +134,13 @@ namespace PoliNorError.Extensions.Http.Tests
 			var pipelineActivity = activities
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 			Assert.That(pipelineActivity, Is.Not.Null);
-			Assert.That(pipelineActivity!.GetTagItem("pipeline.result"), Is.EqualTo("failed"));
-			Assert.That(pipelineActivity.GetTagItem("pipeline.policy.type"), Is.EqualTo("RetryPolicy"));
+			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.ResultTag), Is.EqualTo("failed"));
+			Assert.That(pipelineActivity.GetTagItem(PipelineTelemetry.PolicyTypeTag), Is.EqualTo("RetryPolicy"));
 			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
+
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/any"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.Null);
 		}
 
 		// --- Cancellation path -----------------------------------------
@@ -156,8 +171,11 @@ namespace PoliNorError.Extensions.Http.Tests
 			var pipelineActivity = activities
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 			Assert.That(pipelineActivity, Is.Not.Null);
-			Assert.That(pipelineActivity!.GetTagItem("pipeline.result"), Is.EqualTo("canceled"));
+			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.ResultTag), Is.EqualTo("canceled"));
 			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
+
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.Null);
 		}
 
 		// --- Fallback path ---------------------------------------------
@@ -190,9 +208,10 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivities, Is.Not.Empty);
 
 			var fallbackActivity = pipelineActivities
-				.Find(a => string.Equals(a.GetTagItem("pipeline.policy.type") as string, "FallbackPolicy"));
+				.Find(a => string.Equals(a.GetTagItem(PipelineTelemetry.PolicyTypeTag) as string, "FallbackPolicy"));
 			Assert.That(fallbackActivity, Is.Not.Null);
-			Assert.That(fallbackActivity!.GetTagItem("pipeline.result"), Is.EqualTo("success"));
+			Assert.That(fallbackActivity!.GetTagItem(PipelineTelemetry.ResultTag), Is.EqualTo("success"));
+			Assert.That(fallbackActivity.Status, Is.EqualTo(ActivityStatusCode.Ok));
 		}
 
 		// --- Policy type tag -------------------------------------------
@@ -219,7 +238,59 @@ namespace PoliNorError.Extensions.Http.Tests
 				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
 
 			Assert.That(pipelineActivity, Is.Not.Null);
-			Assert.That(pipelineActivity!.GetTagItem("pipeline.policy.type"), Is.EqualTo("RetryPolicy"));
+			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.PolicyTypeTag), Is.EqualTo("RetryPolicy"));
+		}
+
+		// --- Policy name tag -------------------------------------------
+
+		[Test]
+		public void Should_Tag_Activity_With_Policy_Name_When_Policy_Has_Name()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1).WithPolicyName("myRetryPolicy"))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			Assert.ThrowsAsync<HttpPolicyResultException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.PolicyNameTag), Is.EqualTo("myRetryPolicy"));
+		}
+
+		[Test]
+		public void Should_Not_Emit_Policy_Name_Tag_When_Policy_Has_No_Name()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			Assert.ThrowsAsync<HttpPolicyResultException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity!.GetTagItem(PipelineTelemetry.PolicyNameTag), Is.Null);
 		}
 
 		// --- No-op when no listener ------------------------------------
@@ -270,7 +341,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivities.Count, Is.GreaterThanOrEqualTo(2));
 
 			// Each activity must be tagged with our library's policy type
-			Assert.That(pipelineActivities.TrueForAll(a => a.GetTagItem("pipeline.policy.type") != null), Is.True);
+			Assert.That(pipelineActivities.TrueForAll(a => a.GetTagItem(PipelineTelemetry.PolicyTypeTag) != null), Is.True);
 		}
 
 		// --- Failed response data preserved ----------------------------
@@ -302,6 +373,18 @@ namespace PoliNorError.Extensions.Http.Tests
 			Assert.That(pipelineActivity, Is.Not.Null);
 			Assert.That(exception.HasFailedResponse, Is.True);
 			Assert.That(exception.FailedResponseData.StatusCode, Is.EqualTo(HttpStatusCode.GatewayTimeout));
+
+			// Request tags are present on every pipeline activity.
+			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("GET"));
+
+			// The final handler's activity carries the response status code (504 GatewayTimeout)
+			// because result.UnprocessedError is a FailedHttpResponseException on that handler.
+			var finalHandlerActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName &&
+					a.GetTagItem(PipelineTelemetry.IsFinalHandlerTag) as bool? == true);
+			Assert.That(finalHandlerActivity, Is.Not.Null);
+			Assert.That(finalHandlerActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag),
+				Is.EqualTo((int)HttpStatusCode.GatewayTimeout));
 		}
 
 		[Test]
@@ -383,7 +466,7 @@ namespace PoliNorError.Extensions.Http.Tests
 			{
 				if (_position >= _response.Length) return 0;
 				int n = Math.Min(count, _response.Length - _position);
-				Buffer.BlockCopy(_response, _position, buffer, offset, n);
+				_response.AsSpan(_position, n).CopyTo(buffer.AsSpan(offset, n));
 				_position += n;
 				return n;
 			}
@@ -429,7 +512,7 @@ namespace PoliNorError.Extensions.Http.Tests
 
 			Assert.That(pipelineActivity, Is.Not.Null);
 			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
-			Assert.That(pipelineActivity.GetTagItem("pipeline.result"), Is.EqualTo("faulted"));
+			Assert.That(pipelineActivity.GetTagItem(PipelineTelemetry.ResultTag), Is.EqualTo("faulted"));
 
 			var exceptionEvent = pipelineActivity.Events.FirstOrDefault(e => e.Name == "exception");
 			Assert.That(exceptionEvent.Tags.FirstOrDefault(t => t.Key == "exception.type").Value,
@@ -454,6 +537,360 @@ namespace PoliNorError.Extensions.Http.Tests
 				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
 
 			Assert.That(thrown.Message, Is.EqualTo("No listener"));
+		}
+
+		// --- HTTP semantic conventions ----------------------------------
+
+		[Test]
+		public async Task Should_Tag_Request_With_HTTP_Semantic_Conventions()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Post, "https://api.example.com:8443/users/42?sig=secret&foo=bar&X-Goog-Credential=cred123&AWSAccessKeyId=AKIA123");
+
+			await client.SendAsync(request);
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpRequestMethodTag), Is.EqualTo("POST"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerAddressTag), Is.EqualTo("api.example.com"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.ServerPortTag), Is.EqualTo(8443));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlPathTag), Is.EqualTo("/users/42"));
+			// sig, X-Goog-Credential, and AWSAccessKeyId values must be redacted; foo preserved
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.UrlFullTag),
+				Is.EqualTo("https://api.example.com:8443/users/42?sig=REDACTED&foo=bar&X-Goog-Credential=REDACTED&AWSAccessKeyId=REDACTED"));
+			Assert.That(pipelineActivity.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.EqualTo(200));
+		}
+
+		[Test]
+		public async Task Should_Redact_Expanded_SensitiveQueryParameters()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get,
+				"https://api.example.com/users?access_token=tok123&refresh_token=rtok&"
+				+ "id_token=idt&id_token_unused=keep&client_secret=secret123&"
+				+ "token=tkn&api_key=key123&apikey=key456&password=pw&pwd=pw2&jwt=eyxyz&"
+				+ "Signature=sig123&safe=ok");
+
+			await client.SendAsync(request);
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			var urlFull = pipelineActivity!.GetTagItem(HttpSemanticConventions.UrlFullTag) as string;
+			Assert.That(urlFull, Is.Not.Null);
+			Assert.That(urlFull, Does.Contain("access_token=REDACTED"));
+			Assert.That(urlFull, Does.Contain("refresh_token=REDACTED"));
+			Assert.That(urlFull, Does.Contain("id_token=REDACTED"));
+			Assert.That(urlFull, Does.Contain("id_token_unused=keep"));
+			Assert.That(urlFull, Does.Contain("client_secret=REDACTED"));
+			Assert.That(urlFull, Does.Contain("token=REDACTED"));
+			Assert.That(urlFull, Does.Contain("api_key=REDACTED"));
+			Assert.That(urlFull, Does.Contain("apikey=REDACTED"));
+			Assert.That(urlFull, Does.Contain("password=REDACTED"));
+			Assert.That(urlFull, Does.Contain("pwd=REDACTED"));
+			Assert.That(urlFull, Does.Contain("jwt=REDACTED"));
+			Assert.That(urlFull, Does.Contain("Signature=REDACTED"));
+			Assert.That(urlFull, Does.Contain("safe=ok"));
+		}
+
+		[Test]
+		public async Task Should_Not_Case_Insensitive_Redact_SensitiveParams()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get,
+				"https://api.example.com/users?sig=secret&SIG=notredacted&code=redacted&CODE=notredacted");
+
+			await client.SendAsync(request);
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			var urlFull = pipelineActivity!.GetTagItem(HttpSemanticConventions.UrlFullTag) as string;
+			Assert.That(urlFull, Is.Not.Null);
+			// Lowercase sensitive params ARE redacted (case-sensitive match)
+			Assert.That(urlFull, Does.Contain("sig=REDACTED"));
+			Assert.That(urlFull, Does.Contain("code=REDACTED"));
+			// Uppercase variants are NOT redacted (RFC 3986: query param names are case-sensitive)
+			Assert.That(urlFull, Does.Contain("SIG=notredacted"));
+			Assert.That(urlFull, Does.Contain("CODE=notredacted"));
+		}
+
+		[Test]
+		public async Task Should_Not_Embed_Credentials_In_Url_Full()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+			var request = new HttpRequestMessage(HttpMethod.Get, "http://user:pass@myhost.local/app?q=ok");
+
+			await client.SendAsync(request);
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			// Credentials must not appear in url.full
+			var urlFull = pipelineActivity!.GetTagItem(HttpSemanticConventions.UrlFullTag) as string;
+			Assert.That(urlFull, Does.Not.Contain("user"));
+			Assert.That(urlFull, Does.Not.Contain("pass"));
+			Assert.That(urlFull, Is.EqualTo("http://myhost.local/app?q=ok"));
+		}
+
+		[Test]
+		public async Task Should_Not_Emit_Server_Port_For_Default_Ports()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var httpMock = new MockHttpMessageHandler();
+			httpMock.When("*").Respond(HttpStatusCode.OK, "application/json", "{'name' : 'Test'}");
+
+			var services = new ServiceCollection();
+			services.AddHttpClient("my-httpclient")
+				.ConfigurePrimaryHttpMessageHandler(() => httpMock)
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			// Default HTTPS port (443) and default HTTP port (80) must not be emitted
+			await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "https://secure.example.com/path?a=1"));
+			await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "http://insecure.example.com/path?b=2"));
+
+			var pipelineActivities = activities
+				.Where(a => a.OperationName == PipelineTelemetry.PipelineOperationName)
+				.ToList();
+
+			Assert.That(pipelineActivities, Is.Not.Empty);
+			// Every captured activity must omit server.port for default ports
+			Assert.That(pipelineActivities.TrueForAll(a =>
+				a.GetTagItem(HttpSemanticConventions.ServerPortTag) == null),
+				Is.True, "server.port should not be emitted for default ports (80, 443)");
+		}
+
+		[Test]
+		public void Should_Tag_Response_Status_Code_On_Failed_Response()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var fakeHandler = new DelegatingHandlerThatReturnsBadStatusCode(HttpStatusCode.BadGateway);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()))
+				.AddHttpMessageHandler(() => fakeHandler);
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			Assert.ThrowsAsync<HttpPolicyResultException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			var finalHandlerActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName &&
+					a.GetTagItem(PipelineTelemetry.IsFinalHandlerTag) as bool? == true);
+
+			Assert.That(finalHandlerActivity, Is.Not.Null);
+			Assert.That(finalHandlerActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag),
+				Is.EqualTo((int)HttpStatusCode.BadGateway));
+		}
+
+		[Test]
+		public void Should_Not_Tag_Response_Status_Code_On_Non_Http_Error()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors()));
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			Assert.ThrowsAsync<HttpPolicyResultException>(
+				() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any")));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+		// HttpRequestException (network failure) carries no HTTP status code
+		Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag), Is.Null);
+	}
+
+		// --- OTel CLIENT span status from HTTP status code -----------------
+
+		[Test]
+		public async Task Should_Mark_Activity_As_Error_When_Success_Has_5xx_Status_Code()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var fakeHandler = new DelegatingHandlerThatReturnsBadStatusCode(HttpStatusCode.ServiceUnavailable);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					// None() means no status codes are filtered, so 503 passes through
+					// as a successful policy result — but the span must still be Error
+					// per OTel CLIENT span rules (5xx MUST be Error).
+					.AsFinalHandler(HttpErrorFilter.None()))
+				.AddHttpMessageHandler(() => fakeHandler);
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any"));
+
+			var pipelineActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName &&
+					a.GetTagItem(PipelineTelemetry.IsFinalHandlerTag) as bool? == true);
+
+			Assert.That(pipelineActivity, Is.Not.Null);
+			Assert.That(pipelineActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag),
+				Is.EqualTo((int)HttpStatusCode.ServiceUnavailable));
+			Assert.That(pipelineActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
+		}
+
+		[Test]
+		public async Task Should_Mark_Activity_As_Error_When_Success_Has_4xx_Status_Code()
+		{
+			var activities = new List<Activity>();
+			using var listener = CreateListener(activities);
+
+			var fakeHandler = new DelegatingHandlerThatReturnsBadStatusCode(HttpStatusCode.NotFound);
+
+			var services = new ServiceCollection();
+			services.AddFakeHttpClient()
+				.WithResiliencePipeline(b => b
+					.AddRetryHandler(new RetryPolicy(1))
+					// None() means no status codes are filtered, so 404 passes through
+					// as a successful policy result — but the span must still be Error
+					// per OTel CLIENT span rules (4xx SHOULD be Error).
+					.AsFinalHandler(HttpErrorFilter.None()))
+				.AddHttpMessageHandler(() => fakeHandler);
+
+			using var provider = services.BuildServiceProvider();
+			var client = provider.GetRequiredService<IHttpClientFactory>().CreateClient("my-httpclient");
+
+			var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "/any"));
+
+			Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+
+			var finalHandlerActivity = activities
+				.Find(a => a.OperationName == PipelineTelemetry.PipelineOperationName &&
+					a.GetTagItem(PipelineTelemetry.IsFinalHandlerTag) as bool? == true);
+
+			Assert.That(finalHandlerActivity, Is.Not.Null);
+			Assert.That(finalHandlerActivity!.GetTagItem(HttpSemanticConventions.HttpResponseStatusCodeTag),
+				Is.EqualTo((int)HttpStatusCode.NotFound));
+			Assert.That(finalHandlerActivity.Status, Is.EqualTo(ActivityStatusCode.Error));
+		}
+
+		// --- PipelineTelemetry.Source metadata --------------------------
+
+		[Test]
+		public void Source_Should_Not_Be_Null()
+		{
+			Assert.That(PipelineTelemetry.Source, Is.Not.Null);
+		}
+
+		[Test]
+		public void Source_Should_Have_Expected_Name()
+		{
+			Assert.That(PipelineTelemetry.Source.Name, Is.EqualTo(PipelineTelemetry.SourceName));
+		}
+
+		[Test]
+		public void Source_Should_Have_AssemblyVersion()
+		{
+			var expectedVersion = typeof(PipelineTelemetry).Assembly.GetName().Version?.ToString();
+			Assert.That(PipelineTelemetry.Source.Version, Is.EqualTo(expectedVersion));
+		}
+
+		[Test]
+		public void Started_Activity_Should_Carry_Source_Name()
+		{
+			Activity? captured = null;
+			using var listener = new ActivityListener
+			{
+				ShouldListenTo = s => s.Name == PipelineTelemetry.SourceName,
+				Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+				ActivityStarted = a => captured = a
+			};
+			ActivitySource.AddActivityListener(listener);
+
+			using var activity = PipelineTelemetry.Source.StartActivity("test");
+			Assert.That(activity, Is.Not.Null);
+			Assert.That(captured, Is.Not.Null);
+			Assert.That(captured!.Source.Name, Is.EqualTo(PipelineTelemetry.SourceName));
 		}
 
 	}
