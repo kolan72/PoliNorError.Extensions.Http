@@ -1,3 +1,29 @@
+## 0.15.0
+
+- Add built-in distributed-tracing instrumentation: every policy handler in the HTTP pipeline emits a diagnostic `Activity` through the new `ActivitySource` named `PoliNorError.Extensions.Http`.
+- Add the public `PipelineTelemetry` class exposing `PipelineTelemetry.Source`, the well-known `SourceName` for `TracerProviderBuilder.AddSource`, and activity tag constants.
+- Tag pipeline activities with `polinorerror.pipeline.result` (`success`, `failed`, `canceled`, `faulted`), `polinorerror.pipeline.policy.type`, `polinorerror.pipeline.policy.name` (when set via `WithPolicyName`), and `polinorerror.pipeline.is_final_handler`.
+- Tag activities with OpenTelemetry HTTP semantic-convention attributes (`http.request.method`, `url.full`, `url.path`, `server.address`, `server.port`, `http.response.status_code`); spans use `ActivityKind.Client` and follow OTel span-status rules (4xx/5xx → `Error`).
+- Make the `ActivitySource` zero-cost: all instrumentation is a no-op when no listener is attached.
+- Add an OpenTelemetry observability sample (`samples/Observability`) that subscribes to `PipelineTelemetry.SourceName` and shows span enrichment via `Activity.Current`.
+- Add telemetry tests (`PipelineTelemetryTests`) covering activity emission, nesting, tags, and status codes.
+- Add 'OpenTelemetry Integration' chapters to README and NuGet.md.
+- Fix leak of terminal `HttpResponseMessage` in `PolicyHttpMessageHandler` on failed/canceled policy result.
+- Extract common pipeline builder logic into internal `PolicyFuncComposer` to eliminate duplication.
+- Fix typo: `_hanlders` → `_handlers` in IHttpPolicyResultHandlers.cs
+- Add `PolicyOptionsApplyHelper` to unify shared options-application logic between retry and fallback `FromOptions` extension methods.
+- Add RetryWithOptions sample.
+- Update PoliNorError.Extensions.DependencyInjection package.
+- Update Microsoft.Extensions.Http package.
+- Update README.md and NuGet.md
+- Update Microsoft nuget packages for PoliNorError.Extensions.Http.Tests.
+- Update Microsoft.NET.Test.Sdk package for PoliNorError.Extensions.Http.Tests.Net8.
+- Update NUnit.Analyzers and NUnit3TestAdapter in PoliNorError.Extensions.Http.Tests.Net8.
+- Update Microsoft nuget packages for samples.
+- Update lib to Microsoft.Extensions.Http to 10.0.12.
+- Update RichardSzalay.MockHttp to 7.1.0.0
+
+
 ## 0.10.0
 
 - Introduced the `FallbackPolicyOptions` class.
