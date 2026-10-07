@@ -127,7 +127,7 @@ services.AddHttpClient<IAskCatService, AskCatService>((sp, config) =>
 		pb
 		...
 		.AddPolicyHandler(PolicyForFinalHandler)
-		// ? Adds transient http errors to the response handling filter.
+		// ✔ Adds transient http errors to the response handling filter.
 		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
 		...
 	)
@@ -136,7 +136,7 @@ and/or any non-successful status codes or categories
 ```csharp
 		...
 		.AsFinalHandler(HttpErrorFilter.HandleHttpRequestException()
-			// ? Also adds 5XX status codes to the response handling filter.
+			// ✔ Also adds 5XX status codes to the response handling filter.
 			.OrServerError())
 		...
 
@@ -145,7 +145,7 @@ Use `IncludeException<TException>` on the pipeline builder to allow an outer han
 ```csharp
 		...
 		.AsFinalHandler(HttpErrorFilter.HandleTransientHttpErrors())
-		// ? Include 'SomeExceptionFromNonPipelineHandler' exceptions in the filter 
+		// ✔ Include 'SomeExceptionFromNonPipelineHandler' exceptions in the filter 
 		//when thrown by a non-pipeline handler (in this case).
 		.IncludeException<SomeExceptionFromNonPipelineHandler>()
 		...
@@ -168,7 +168,7 @@ catch (OperationCanceledException oe)
 }
 catch (HttpPolicyResultException hpre)
 {
-	// ? If the response status code matches the handling filter status code:
+	// ✔ If the response status code matches the handling filter status code:
 	if (hpre.HasFailedResponse)
 	{
 		//For example, log a failed status code.
