@@ -53,7 +53,7 @@ namespace PoliNorError.Extensions.Http
 
 	internal class HttpPolicyResultHandlers : IHttpPolicyResultHandlers
 	{
-		private readonly List<IHttpPolicyResultHandler> _hanlders = new List<IHttpPolicyResultHandler>();
+		private readonly List<IHttpPolicyResultHandler> _handlers = new List<IHttpPolicyResultHandler>();
 
 		public IHttpPolicyResultHandlers AddHandler(Action<PolicyResult<HttpResponseMessage>, CancellationToken> syncHandler)
 		{
@@ -61,7 +61,7 @@ namespace PoliNorError.Extensions.Http
 				throw new ArgumentNullException(nameof(syncHandler));
 
 			var handler = new SyncHttpPolicyResultHandler(syncHandler);
-			_hanlders.Add(handler);
+			_handlers.Add(handler);
 			return this;
 		}
 
@@ -71,7 +71,7 @@ namespace PoliNorError.Extensions.Http
 				throw new ArgumentNullException(nameof(syncHandler));
 
 			var handler = new NotCancelableSyncHttpPolicyResultHandler(syncHandler);
-			_hanlders.Add(handler);
+			_handlers.Add(handler);
 			return this;
 		}
 
@@ -81,7 +81,7 @@ namespace PoliNorError.Extensions.Http
 				throw new ArgumentNullException(nameof(asyncHandler));
 
 			var handler = new AsyncHttpPolicyResultHandler(asyncHandler);
-			_hanlders.Add(handler);
+			_handlers.Add(handler);
 			return this;
 		}
 
@@ -91,13 +91,13 @@ namespace PoliNorError.Extensions.Http
 				throw new ArgumentNullException(nameof(asyncHandler));
 
 			var handler = new NotCancelableAsyncHttpPolicyResultHandler(asyncHandler);
-			_hanlders.Add(handler);
+			_handlers.Add(handler);
 			return this;
 		}
 
 		internal void AttachTo(Policy policy)
 		{
-			foreach (var handler in _hanlders)
+			foreach (var handler in _handlers)
 			{
 				handler.AttachTo(policy);
 			}

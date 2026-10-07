@@ -231,7 +231,7 @@ namespace PoliNorError.Extensions.Http.Tests
 
 				var request = new HttpRequestMessage(HttpMethod.Get, "/any");
 
-				var _ = sut.SendAsync(request).GetAwaiter().GetResult();
+				sut.SendAsync(request).GetAwaiter().GetResult();
 
 				Assert.That(capturedPolicyName, Is.EqualTo("outerName"));
 			}
