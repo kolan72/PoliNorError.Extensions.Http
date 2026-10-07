@@ -1,3 +1,21 @@
+## 0.10.0
+
+- Introduced the `FallbackPolicyOptions` class.
+- Added an `AddFallbackHandler` overload to pipeline builders that accepts a `Func<CancellationToken, Task<HttpResponseMessage>>` and `FallbackPolicyOptions`.
+- Add `AddFallbackHandler` overload to pipeline builders accepting `FallbackPolicyOptions` and `Action<FallbackPolicyOptions>`.
+- `.ConfigureAwait(false)` added to the `HttpResponseMessageToHandleByPolicyAdapter.AdaptAsync`.
+- Fix typo in `IPipelinePolicyItemBase.CorrectFilter` method name.
+- Significantly improve performance of pipeline tests.
+- Add PoliNorError.Extensions.Http.Tests.Net8.csproj targeting net9.0
+- Add the FallbackFromOptions project to Samples.sln to see an example of a fallback handler built from options.
+- Add RetryWithDI.csproj sample demonstrating DI-based resilience pipelines with the PoliNorError.Extensions.DependencyInjection package.
+- Use ProjectReference to PoliNorError.Extensions.Http.csproj in samples Shared.csproj.
+- Update lib, tests, and samples to PoliNorError 2.24.30.
+- Update Microsoft nuget packages for lib, tests and samples.
+- Update coverlet.collector for PoliNorError.Extensions.Http.Tests.Net8.
+- Update tests to NUnit.4.5.1.
+
+
 ## 0.9.1
 
 - Added `AddFallbackHandler` method to the library's pipeline builders.
