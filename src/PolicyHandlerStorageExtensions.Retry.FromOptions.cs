@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 namespace PoliNorError.Extensions.Http
 {
@@ -74,12 +74,7 @@ namespace PoliNorError.Extensions.Http
 			if (options is null)
 				throw new ArgumentNullException(nameof(options));
 
-			var bep = new BulkErrorProcessor();
-			if (!(options.ConfigureErrorProcessing is null))
-			{
-				options.ConfigureErrorProcessing(bep);
-			}
-
+			var bep = PolicyOptionsApplyHelper.CreateConfiguredBulkErrorProcessor(options);
 			var res = func(options, bep);
 
 			if (options.ProcessRetryAfterHeader)
@@ -87,22 +82,7 @@ namespace PoliNorError.Extensions.Http
 				res.WithRetryAfterHeaderWait();
 			}
 
-			if (!(options.ConfigurePolicyResultHandling is null))
-			{
-				var handlers = new HttpPolicyResultHandlers();
-				options.ConfigurePolicyResultHandling(handlers);
-				handlers.AttachTo(res);
-			}
-
-			if (!(options.ConfigureErrorFilter is null))
-			{
-				res.AddErrorFilter(options.ConfigureErrorFilter);
-			}
-
-			if (!(options.PolicyName is null))
-			{
-				res.WithPolicyName(options.PolicyName);
-			}
+			PolicyOptionsApplyHelper.ApplySharedConfiguration(options, res);
 			return storage.AddPolicyHandler(res);
 		}
 	}

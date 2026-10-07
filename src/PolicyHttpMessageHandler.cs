@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
@@ -19,27 +20,127 @@ namespace PoliNorError.Extensions.Http
 
 		public static PolicyHttpMessageHandler CreateOuterHandler(IPolicyBase policy)
 		{
-			return new PolicyHttpMessageHandler { _policy = policy};
+			return new PolicyHttpMessageHandler { _policy = policy };
 		}
 
 		public static PolicyHttpMessageHandler CreateFinalHandler(IPolicyBase policy, HttpErrorFilterCriteria errorsToHandle)
 		{
-			return new PolicyHttpMessageHandler {_policy = policy, _errorsToHandle = errorsToHandle, _isFinalHandler = true };
+			return new PolicyHttpMessageHandler { _policy = policy, _errorsToHandle = errorsToHandle, _isFinalHandler = true };
 		}
 
 		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
 		{
-			var fn = ((Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>)SendCoreAsync).Apply(request);
-			var result = await _policy.HandleAsync(fn, cancellationToken).ConfigureAwait(false);
-			if (result.IsSuccess)
-				return result.Result;
-			if (result.IsFailed || result.IsCanceled)
+			using (var activity = StartPipelineActivity(request))
 			{
-				throw new HttpPolicyResultException(result, _isFinalHandler);
+				try
+				{
+					var fn = ((Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>>)SendCoreAsync).Apply(request);
+
+					var result = await _policy.HandleAsync(fn, cancellationToken).ConfigureAwait(false);
+
+					if (result.IsSuccess)
+					{
+						SetResultTag(activity, "success");
+						HttpSemanticConventions.SetActivityStatusFromHttpStatusCode(activity, result.Result.StatusCode);
+						HttpSemanticConventions.SetResponseStatusCodeTag(activity, result.Result.StatusCode);
+						return result.Result;
+					}
+
+					if (result.IsFailed || result.IsCanceled)
+					{
+						SetResultTag(activity, result.IsCanceled ? "canceled" : "failed");
+						if (result.UnprocessedError is FailedHttpResponseException failedEx)
+							HttpSemanticConventions.SetResponseStatusCodeTag(activity, failedEx.FailedResponseData.StatusCode);
+						if (result.IsCanceled)
+							activity?.SetStatus(ActivityStatusCode.Error, "Operation canceled");
+						else
+							activity?.SetStatus(ActivityStatusCode.Error, result.UnprocessedError?.Message);
+
+						DisposeOrphanedPreviousResponse(request);
+						throw new HttpPolicyResultException(result, _isFinalHandler);
+					}
+					else
+					{
+						activity?.SetStatus(ActivityStatusCode.Error, "Unexpected policy result state");
+						DisposeOrphanedPreviousResponse(request);
+						throw new NotImplementedException();
+					}
+				}
+				catch (Exception ex) when (!(ex is HttpPolicyResultException))
+				{
+					// An unexpected exception escaped the policy (e.g., _policy.HandleAsync threw
+					// instead of returning a PolicyResult). Make the span authoritative: record the
+					// exception and mark it as errored so the trace reflects every failure mode.
+					// HttpPolicyResultException is excluded - its status is set explicitly above.
+					SetResultTag(activity, "faulted");
+					if (ex is FailedHttpResponseException faultedEx)
+						HttpSemanticConventions.SetResponseStatusCodeTag(activity, faultedEx.FailedResponseData.StatusCode);
+
+#if NET7_0_OR_GREATER
+					// Use built-in AddException method on .NET 7+ / DiagnosticSource 7.0+
+					activity?.AddException(ex);
+#else
+					// Fallback: Manually emit the "exception" event with standard OTel tags.
+					// Activity.AddException was introduced in .NET 7 / System.Diagnostics.DiagnosticSource 7.0.0.
+					// See: https://opentelemetry.io/docs/specs/semconv/exceptions/exceptions-spans/
+					if (activity != null)
+					{
+						var tags = new ActivityTagsCollection
+						{
+							{ "exception.type", ex.GetType().FullName },
+							{ "exception.message", ex.Message }
+						};
+
+						// Include stack trace if available (per OTel semantic conventions)
+						if (!string.IsNullOrEmpty(ex.StackTrace))
+						{
+							tags.Add("exception.stacktrace", ex.StackTrace);
+						}
+
+						activity.AddEvent(new ActivityEvent("exception", tags: tags));
+					}
+#endif
+
+					if (activity?.Status != ActivityStatusCode.Error)
+						activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+					DisposeOrphanedPreviousResponse(request);
+					throw;
+				}
 			}
-			else
+		}
+
+		private Activity StartPipelineActivity(HttpRequestMessage request)
+		{
+			var activity = PipelineTelemetry.Source.StartActivity(
+				PipelineTelemetry.PipelineOperationName,
+				ActivityKind.Client);
+
+			if (activity != null)
 			{
-				throw new NotImplementedException();
+				HttpSemanticConventions.SetRequestTags(activity, request);
+
+				activity.SetTag(PipelineTelemetry.IsFinalHandlerTag, _isFinalHandler);
+				var policyType = _policy?.GetType().Name ?? "Unknown";
+				activity.SetTag(PipelineTelemetry.PolicyTypeTag, policyType);
+
+				if (_policy is IPolicyBase namedPolicy)
+				{
+					var policyName = namedPolicy.PolicyName;
+					if (!string.IsNullOrEmpty(policyName) && policyName != policyType)
+					{
+						activity.SetTag(PipelineTelemetry.PolicyNameTag, policyName);
+					}
+				}
+			}
+
+			return activity;
+		}
+
+		private static void SetResultTag(Activity activity, string result)
+		{
+			if (activity != null)
+			{
+				activity.SetTag(PipelineTelemetry.ResultTag, result);
 			}
 		}
 
@@ -50,11 +151,7 @@ namespace PoliNorError.Extensions.Http
 				throw new ArgumentNullException(nameof(request));
 			}
 
-			if (request.Properties.TryGetValue(PreviousResponseKey, out var priorResult) && priorResult is IDisposable disposable)
-			{
-				request.Properties.Remove(PreviousResponseKey);
-				disposable.Dispose();
-			}
+			DisposeOrphanedPreviousResponse(request);
 
 			var result = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -62,6 +159,15 @@ namespace PoliNorError.Extensions.Http
 			if (!_isFinalHandler)
 				return result;
 			return await HttpResponseMessageToHandleByPolicyAdapter.AdaptAsync(result, _errorsToHandle).ConfigureAwait(false);
+		}
+
+		private static void DisposeOrphanedPreviousResponse(HttpRequestMessage request)
+		{
+			if (request.Properties.TryGetValue(PreviousResponseKey, out var priorResult) && priorResult is IDisposable disposable)
+			{
+				request.Properties.Remove(PreviousResponseKey);
+				disposable.Dispose();
+			}
 		}
 	}
 }

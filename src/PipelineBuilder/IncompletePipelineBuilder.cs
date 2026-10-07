@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -66,46 +66,22 @@ namespace PoliNorError.Extensions.Http
 			public Func<IServiceProvider, IPolicyBase> PolicyFactory => (sp) => _policyFunc(sp);
 
 			public void AsFinalHandler(HttpErrorFilterCriteria errorsToHandle)
-			{
-				T p(T pEx)
-				{
-					return pEx.WithErrorsFilter(errorsToHandle);
-				}
-				var prevF = _policyFunc;
-				_policyFunc = (sp) => p(prevF(sp));
-			}
+				=> _policyFunc = PolicyFuncComposer.ApplyFinalHandlerFilter(_policyFunc, errorsToHandle);
 
 			public void CorrectFilter()
 			{
 				if (_hasIncludeError) return;
-				var prevF = _policyFunc;
-				_policyFunc = (sp) =>
-				{
-					var policy = prevF(sp);
-					return policy.IncludeError<HttpPolicyResultException>();
-				};
+				_policyFunc = PolicyFuncComposer.ApplyDefaultHttpErrorFilter(_policyFunc);
 			}
 
 			public void IncludeException<TException>(Func<TException, bool> func = null) where TException : Exception
 			{
-				var prevF = _policyFunc;
-				_policyFunc = (sp) =>
-				{
-					var policy = prevF(sp);
-					return policy.IncludeInnerError(func);
-				};
+				_policyFunc = PolicyFuncComposer.ApplyInnerExceptionFilter(_policyFunc, func);
 				_hasIncludeError = true;
 			}
 
 			public void IncludeExceptionForFinalHandler<TException>(Func<TException, bool> func = null) where TException : Exception
-			{
-				var prevF = _policyFunc;
-				_policyFunc = (sp) =>
-				{
-					var policy = prevF(sp);
-					return policy.IncludeError(func);
-				};
-			}
+				=> _policyFunc = PolicyFuncComposer.ApplyTopLevelExceptionFilter(_policyFunc, func);
 		}
 	}
 }
