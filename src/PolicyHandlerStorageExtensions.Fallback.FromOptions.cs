@@ -41,7 +41,12 @@ namespace PoliNorError.Extensions.Http
 			Func<CancellationToken, HttpResponseMessage> func,
 			FallbackPolicyOptions options) where TStorage : IPolicyHandlerStorage<TStorage>
 		{
-			return storage.AddFallbackHandler(new Fallback(func), options);
+			if (func is null)
+				throw new ArgumentNullException(nameof(func));
+
+			return storage.AddFallbackHandler(
+				new Func<CancellationToken, Task<HttpResponseMessage>>(ct => Task.FromResult(func(ct))),
+				options);
 		}
 
 		/// <summary>
