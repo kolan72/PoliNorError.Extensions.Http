@@ -83,5 +83,45 @@ namespace PoliNorError.Extensions.Http
 		{
 			return storage.AddPolicyHandler(fallbackPolicyFactory);
 		}
+
+		/// <summary>
+		/// Adds a handler based on a PolicyCollection to a pipeline builder
+		/// that implements the <see cref="IPolicyHandlerStorage{TStorage}"/> interface.
+		/// </summary>
+		/// <typeparam name="TStorage">Storage type for <see cref="System.Net.Http.DelegatingHandler"/>.</typeparam>
+		/// <param name="storage">Storage for <see cref="System.Net.Http.DelegatingHandler"/>.</param>
+		/// <param name="policyCollection">Policy collection.</param>
+		/// <returns></returns>
+		public static TStorage AddPolicyCollectionHandler<TStorage>(this IPolicyHandlerStorage<TStorage> storage, PolicyCollection policyCollection) where TStorage : IPolicyHandlerStorage<TStorage>
+		{
+			return storage.AddPolicyHandler(policyCollection);
+		}
+
+		/// <summary>
+		/// Adds a handler based on a PolicyCollection to a pipeline builder
+		/// that implements the <see cref="IPolicyHandlerStorage{TStorage}"/> interface.
+		/// </summary>
+		/// <typeparam name="TStorage">Storage type for <see cref="System.Net.Http.DelegatingHandler"/>.</typeparam>
+		/// <param name="storage">Storage for <see cref="System.Net.Http.DelegatingHandler"/>.</param>
+		/// <param name="policyCollectionFactory">Delegate to create a Policy collection.</param>
+		/// <returns></returns>
+		public static TStorage AddPolicyCollectionHandler<TStorage>(this IPolicyHandlerStorage<TStorage> storage, Func<IServiceProvider, PolicyCollection> policyCollectionFactory) where TStorage : IPolicyHandlerStorage<TStorage>
+		{
+			return storage.AddPolicyHandler(policyCollectionFactory);
+		}
+
+		/// <summary>
+		/// Adds a handler based on a PolicyCollection to a pipeline builder
+		/// that implements the <see cref="IPolicyHandlerStorage{TStorage, TContext}"/> interface.
+		/// </summary>
+		/// <typeparam name="TStorage">Storage type for <see cref="System.Net.Http.DelegatingHandler"/>.</typeparam>
+		/// <typeparam name="TContext">Type of overall context.</typeparam>
+		/// <param name="storage">Storage for <see cref="System.Net.Http.DelegatingHandler"/>.</param>
+		/// <param name="policyCollectionFactory">Delegate to create a Policy collection.</param>
+		/// <returns></returns>
+		public static TStorage AddPolicyCollectionHandler<TStorage, TContext>(this IPolicyHandlerStorage<TStorage, TContext> storage, Func<TContext, IServiceProvider, PolicyCollection> policyCollectionFactory) where TStorage : IPolicyHandlerStorage<TStorage, TContext>
+		{
+			return storage.AddPolicyHandler(policyCollectionFactory);
+		}
 	}
 }
